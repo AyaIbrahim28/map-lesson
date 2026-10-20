@@ -248,7 +248,7 @@ const G={
  book:`<path d="M0-10Q-12-16-22-12V12Q-12 8 0 14Q12 8 22 12V-12Q12-16 0-10Z" fill="#fff" stroke="#2a2335" stroke-width="2" stroke-linejoin="round"/><line x1="0" y1="-10" x2="0" y2="14" stroke="#2a2335" stroke-width="2"/><path d="M-17-5H-5M-17 1H-5M5-5H17M5 1H17" stroke="var(--muted)" stroke-width="1.5"/>`
 };
 function card(x,y,c,title,icon,s,z=17){return `<g data-s="${s}"><rect x="${x}" y="${y}" width="150" height="66" rx="16" fill="${c}" stroke="#2a2335" stroke-width="3"/><g transform="translate(${x+28},${y+33})">${icon}</g>${T(x+97,y+40,title,{z,f:'#fff'})}</g>`}
-function person(cx,cy,glyph,label,s,tint){return `<g data-s="${s}"><circle cx="${cx}" cy="${cy}" r="40" fill="${tint}" stroke="#2a2335" stroke-width="3"/><g transform="translate(${cx},${cy})" class="bob">${glyph}</g>${T(cx,cy+58,label,{z:14})}</g>`}
+function person(cx,cy,glyph,label,s,tint){return `<g data-s="${s}"><circle cx="${cx}" cy="${cy}" r="40" fill="${tint}" stroke="#2a2335" stroke-width="3"/><g transform="translate(${cx},${cy})"><g class="bob">${glyph}</g></g>${T(cx,cy+58,label,{z:14})}</g>`}
 const starsBg=()=>{let s='';const pts=[[30,30],[80,60],[120,22],[160,80],[250,30],[300,70],[350,25],[370,100],[40,110],[330,140],[90,130],[270,110],[140,140],[20,170],[380,180],[230,80]];pts.forEach((p,i)=>{s+=`<circle class="tw" style="animation-delay:${(i%5)*.4}s" cx="${p[0]}" cy="${p[1]}" r="${i%3?1.6:2.4}" fill="#fff"/>`});return s};
 const confetti=()=>{let s='';const cols=['#e2553f','#f3b331','#4f9a52','#2a86b0','#1d5c74'];for(let i=0;i<26;i++){s+=`<rect class="fall" style="animation-delay:${(i*0.27%3.5).toFixed(2)}s" x="${(i*53)%400}" y="-20" width="8" height="12" rx="2" fill="${cols[i%5]}"/>`}return s};
 
@@ -401,7 +401,6 @@ lines:['الألوان على الخريطة مش للزينة بس! كل لون
 q:'اللون الأخضر على الخريطة بيدل على إيه؟ والبني؟ والأزرق؟',a:'الأخضر: السهول. البني: الجبال والهضاب. الأزرق: البحار والمحيطات.'},
 
 {l:L2,t:'مين بيستخدم الخريطة؟',art:svg(`
-<g opacity=".22" stroke-width="5" fill="none" stroke-linecap="round"><path d="M0 120H400" stroke="var(--coral)"/><path d="M130 0V260" stroke="var(--river)"/><path d="M270 0V260" stroke="var(--leaf)"/></g>
 ${person(330,58,G.plant,'المزارع',2,'#e1f1d5')}
 ${person(200,58,G.plane,'الطيار والقبطان',3,'#d5edf6')}
 ${person(70,58,G.tourist,'السايح',4,'#fdeec4')}
