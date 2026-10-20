@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>رحلة الخريطة</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;600;700;800&family=Tajawal:wght@500;700;800&display=swap">
+<style>
+/* Layout: a cartoon "TV" stage on a sand-colored map graticule; subtitles band under the picture, controls below. Single committed light look. */
+:root{
+  --land:#f4dfa6; --paper:#fffaf0; --sea:#1d5c74; --water:#8fcbe0; --river:#2a86b0;
+  --ink:#2a2335; --coral:#e2553f; --leaf:#4f9a52; --earth:#a8673a; --sun:#f3b331;
+  --night:#1b2346; --muted:#6b6070; --skin:#f1c7a0;
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif;
+  --body:"Tajawal","Baloo Bhaijaan 2",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{
+  background-color:var(--land); color:var(--ink); font-family:var(--body);
+  background-image:linear-gradient(rgba(29,92,116,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(29,92,116,.09) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font-family:var(--display);cursor:pointer}
+button:focus-visible{outline:3px solid var(--coral);outline-offset:3px}
+.app{height:100%;max-width:880px;margin:0 auto;display:grid;grid-template-rows:auto 1fr auto;gap:10px;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-direction:column;gap:8px}
+.top{display:flex;align-items:center;gap:10px}
+.chip{background:var(--sea);color:#fff;font-family:var(--display);font-weight:700;font-size:.85rem;padding:3px 12px;border-radius:99px;white-space:nowrap}
+h1{font-family:var(--display);font-size:clamp(1.1rem,3.6vw,1.6rem);font-weight:800;margin:0;flex:1;min-width:0;text-wrap:balance;line-height:1.25}
+.count{font-family:var(--display);font-weight:700;color:var(--muted);white-space:nowrap}
+.prog{display:flex;gap:3px}
+.prog button{flex:1;height:9px;border:0;border-radius:5px;background:rgba(42,35,53,.15);padding:0}
+.prog button.done{background:var(--sea)}
+.prog button.cur{background:var(--coral)}
+.stage{position:relative;min-height:0;display:flex;flex-direction:column;background:var(--paper);border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);overflow:hidden}
+.art{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px}
+.art svg{width:100%;height:100%;max-height:100%;direction:ltr;overflow:visible}
+.cap{background:var(--sea);color:#fff;min-height:5.6em;display:flex;align-items:center;justify-content:center;padding:12px 18px}
+.cap p{margin:0;font-family:var(--display);font-weight:600;font-size:clamp(1.05rem,3.4vw,1.45rem);line-height:1.6;text-align:center;max-width:44ch;text-wrap:balance}
+.cap p.in{animation:capin .45s ease-out}
+@keyframes capin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.controls{display:flex;justify-content:center;align-items:center;gap:14px;padding-bottom:4px}
+.cbtn{width:52px;height:52px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);box-shadow:0 4px 0 var(--ink);display:grid;place-items:center;padding:0;color:var(--ink)}
+.cbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.cbtn.big{width:66px;height:66px;background:var(--sun)}
+.cbtn svg{width:24px;height:24px}
+.cbtn.off{opacity:.55}
+
+/* SVG art */
+.t{font-family:var(--display);font-weight:700}
+.art [data-s]{opacity:0;transform:scale(.6);transform-box:fill-box;transform-origin:center;transition:opacity .5s ease,transform .7s cubic-bezier(.3,1.6,.5,1)}
+.art [data-s].show{opacity:1;transform:none}
+.float{animation:float 3s ease-in-out infinite;transform-box:fill-box}
+.spin{animation:spin 14s linear infinite;transform-box:fill-box;transform-origin:center}
+.spinr{animation:spin 20s linear infinite reverse;transform-box:fill-box;transform-origin:center}
+.pulse{animation:pulse 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.tw{animation:tw 2.4s ease-in-out infinite}
+.draw{stroke-dasharray:700;stroke-dashoffset:700}
+.show .draw,.draw.show{animation:draw 3s ease-out forwards}
+.show .rise{animation:rise 2s ease-out both}
+.needle{animation:needle 4s ease-in-out infinite;transform-box:view-box}
+.orbit{animation:spin 9s linear infinite;transform-box:view-box}
+.fly{animation:fly 7s linear infinite}
+.bob{animation:bob 1.2s ease-in-out infinite;transform-box:fill-box}
+.wave{animation:wave 2.5s ease-in-out infinite}
+.blink{animation:tw 1s steps(2) infinite}
+.fall{animation:fall 3.5s linear infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{transform:scale(1.15);opacity:.75}}
+@keyframes tw{50%{opacity:.25}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes rise{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes needle{0%{transform:rotate(70deg)}15%{transform:rotate(-30deg)}28%{transform:rotate(14deg)}40%{transform:rotate(-5deg)}50%,100%{transform:rotate(0)}}
+@keyframes fly{from{transform:translateX(-160px)}to{transform:translateX(460px)}}
+@keyframes bob{50%{transform:translateY(-7px)}}
+@keyframes wave{50%{transform:translateX(8px)}}
+@keyframes fall{from{transform:translateY(-40px) rotate(0)}to{transform:translateY(300px) rotate(400deg)}}
+
+/* Quiz */
+.quiz{position:absolute;inset:0;background:rgba(255,250,240,.97);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}
+.qcard{width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.qhead{display:flex;align-items:center;gap:14px}
+.qbadge{font-family:var(--display);font-weight:800;font-size:1.05rem;background:var(--coral);color:#fff;padding:4px 16px;border-radius:99px;transform:rotate(-2deg)}
+.ring{position:relative;width:92px;height:92px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9}
+.rbg{stroke:rgba(42,35,53,.12)}
+.rfg{stroke:var(--leaf);stroke-linecap:round;stroke-dasharray:276.5;transition:stroke-dashoffset 1s linear,stroke .3s}
+.ring.low .rfg{stroke:var(--coral)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:1.9rem;font-weight:800;font-variant-numeric:tabular-nums}
+.qtext{font-family:var(--display);font-weight:800;font-size:clamp(1.15rem,3.8vw,1.6rem);line-height:1.5;margin:0;text-wrap:balance}
+.think{margin:0;color:var(--muted);font-weight:700}
+.ans{background:#e4f2e0;border:3px solid var(--leaf);border-radius:18px;padding:10px 16px;animation:capin .5s ease-out;width:100%}
+.ans span{font-family:var(--display);font-weight:800;color:var(--leaf)}
+.ans p{margin:4px 0 0;font-family:var(--display);font-weight:700;font-size:clamp(1.05rem,3.4vw,1.35rem);line-height:1.55}
+.qbtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.pill{border:3px solid var(--ink);border-radius:99px;padding:8px 20px;font-size:1.05rem;font-weight:800;background:var(--sun);color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.pill:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.pill.alt{background:var(--paper)}
+
+/* Overlays */
+.over{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:auto;
+  background-color:var(--land);background-image:inherit;background-size:44px 44px;
+  padding-block:max(16px,env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ocard{width:100%;max-width:520px;background:var(--paper);border:3px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.ocard svg{width:120px;height:120px}
+.ocard h2{font-family:var(--display);font-size:clamp(2rem,8vw,2.8rem);margin:0;line-height:1.1;font-weight:800;color:var(--sea)}
+.ocard .sub{margin:0;font-weight:700;color:var(--muted);line-height:1.6}
+.go{font-size:1.4rem;padding:12px 34px}
+.lessons{display:grid;gap:8px;width:100%}
+.lessons button{border:2px solid var(--ink);border-radius:14px;background:#fff;padding:9px 12px;font-size:1rem;font-weight:700;color:var(--ink);display:flex;justify-content:space-between;gap:8px}
+.lessons button span{color:var(--muted);font-weight:600}
+.note{font-size:.9rem;color:var(--muted);margin:0}
+.nour{position:absolute;inset-inline-start:10px;bottom:calc(5.6em + 34px);display:flex;flex-direction:column;align-items:center;z-index:2;pointer-events:none}
+.nour svg{width:58px;height:58px;filter:drop-shadow(0 3px 0 rgba(42,35,53,.35))}
+.nour span{font-family:var(--display);font-weight:800;font-size:.8rem;background:var(--coral);color:#fff;border-radius:99px;padding:0 9px;margin-top:-6px}
+.talking .nour svg{animation:bob 1.2s ease-in-out infinite}
+.talking .mouth{animation:talk .28s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+@keyframes talk{from{transform:scaleY(.6)}to{transform:scaleY(2.6)}}
+.set{align-items:stretch;text-align:start}
+.set h3{font-family:var(--display);font-size:1.6rem;margin:0;color:var(--sea)}
+.set label{font-weight:800}
+.set select{font:inherit;font-size:1rem;padding:10px;border:2px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);width:100%}
+.rate{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--muted)}
+.rate input{flex:1;accent-color:var(--coral)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:#fff;padding:10px 16px;border-radius:14px;font-weight:700;max-width:calc(100% - 32px);text-align:center}
+@media (max-width:520px){.cap{min-height:6.4em}.cbtn{width:46px;height:46px}.cbtn.big{width:58px;height:58px}.ring{width:78px;height:78px}}
+@media (prefers-reduced-motion:reduce){.float,.spin,.spinr,.pulse,.tw,.needle,.orbit,.fly,.bob,.wave,.blink,.fall{animation:none!important}.draw{stroke-dashoffset:0!important}}
+</style>
+</head>
+<body>
+
+
+<div class="app" dir="rtl">
+  <header>
+    <div class="top"><span class="chip" id="chip">الدرس الأول</span><h1 id="title">رحلة الخريطة</h1><span class="count" id="count"></span></div>
+    <nav class="prog" id="prog" aria-label="أجزاء الدرس"></nav>
+  </header>
+  <main class="stage" id="stageEl">
+    <div class="art" id="art"></div>
+    <div class="nour" aria-hidden="true"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="#fdeec4" stroke="#2a2335" stroke-width="3"/><path d="M14 46Q12 14 40 12Q68 14 66 46Q60 26 40 26Q20 26 14 46Z" fill="#4a3426"/><circle cx="40" cy="44" r="20" fill="#f1c7a0"/><path d="M20 40Q22 22 40 22Q58 22 60 40Q52 30 40 30Q28 30 20 40Z" fill="#4a3426"/><circle cx="62" cy="30" r="6" fill="#e2553f"/><circle cx="33" cy="42" r="2.6" fill="#2a2335"/><circle cx="47" cy="42" r="2.6" fill="#2a2335"/><circle cx="28" cy="50" r="3" fill="#f3a19a" opacity=".7"/><circle cx="52" cy="50" r="3" fill="#f3a19a" opacity=".7"/><ellipse class="mouth" cx="40" cy="54" rx="5" ry="2.2" fill="#b23a26"/></svg><span>مريم</span></div>
+    <div class="cap"><p id="cap">اضغطي على زرار التشغيل عشان نبدأ</p></div>
+    <div class="quiz" id="quiz" hidden>
+      <div class="qcard">
+        <div class="qhead"><span class="qbadge">سؤال! فكّري</span>
+          <div class="ring" id="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="rbg"/><circle id="rfg" cx="50" cy="50" r="44" class="rfg"/></svg><b id="secs">٣٠</b></div>
+        </div>
+        <p class="qtext" id="qtext"></p>
+        <p class="think" id="think">خدي ٣٠ ثانية فكّري، وقولي الإجابة بصوت عالي</p>
+        <div class="ans" id="ans" hidden><span>الإجابة</span><p id="atext"></p></div>
+        <div class="qbtns"><button class="pill" id="revealBtn">عرفتها! ورّيني الإجابة</button><button class="pill" id="nextBtn" hidden>كمّلي</button></div>
+      </div>
+    </div>
+  </main>
+  <div class="controls">
+    <button class="cbtn" id="prevBtn" aria-label="الجزء اللي فات"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5l-10 7 10 7z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" transform="scale(-1,1) translate(-24,0)"/></svg></button>
+    <button class="cbtn big" id="playBtn" aria-label="تشغيل أو إيقاف"><svg viewBox="0 0 24 24" id="playIco"></svg></button>
+    <button class="cbtn" id="nextSceneBtn" aria-label="الجزء اللي بعده"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 5l-10 7 10 7z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    <button class="cbtn" id="sndBtn" aria-label="الصوت"><svg viewBox="0 0 24 24" id="sndIco"></svg></button>
+    <button class="cbtn" id="setBtn" aria-label="اختيار الصوت"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.6" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="10" cy="17" r="2.6" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button>
+  </div>
+</div>
+
+<div class="over" id="start">
+  <div class="ocard">
+    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="#fff" stroke="#2a2335" stroke-width="4"/><g class="spin" style="animation-duration:30s"><polygon points="60,10 68,52 60,60 52,52" fill="#e2553f"/><polygon points="60,110 68,68 60,60 52,68" fill="#2a2335"/><polygon points="10,60 52,52 60,60 52,68" fill="#1d5c74"/><polygon points="110,60 68,52 60,60 68,68" fill="#1d5c74"/></g><circle cx="60" cy="60" r="6" fill="#f3b331" stroke="#2a2335" stroke-width="2"/></svg>
+    <h2>رحلة الخريطة</h2>
+    <p class="sub">الوحدة الأولى · دراسات اجتماعية · الصف الرابع<br>شرح بالحكاية والرسومات، وبعد كل جزء سؤال ونفكّر فيه ٣٠ ثانية</p>
+    <button class="pill go" id="goBtn">يلا نبدأ!</button>
+    <div class="lessons" id="lessons"></div>
+    <p class="note">شغّلي الصوت عشان تسمعي مريم وهي بتشرح. أحلى صوت بنت مصري بيشتغل على متصفح Microsoft Edge، وتقدري تغيّري الصوت من زرار الإعدادات تحت.</p>
+  </div>
+</div>
+
+<div class="over" id="end" hidden>
+  <div class="ocard">
+    <svg viewBox="0 0 120 120"><polygon class="pulse" points="60,8 74,42 112,44 82,68 92,106 60,84 28,106 38,68 8,44 46,42" fill="#f3b331" stroke="#2a2335" stroke-width="4" stroke-linejoin="round"/></svg>
+    <h2>برافو يا بطلة!</h2>
+    <p class="sub">خلّصتي الوحدة الأولى كلها: الاتجاهات، والخريطة وعناصرها، وتطور الخريطة، ومصادر المعلومات.</p>
+    <button class="pill go" id="againBtn">نعيد من الأول</button>
+    <button class="pill alt" id="closeEnd">أرجع للجزء الأخير</button>
+  </div>
+</div>
+<div class="over" id="settings" hidden>
+  <div class="ocard set">
+    <h3>صوت مريم</h3>
+    <label for="voiceSel">اختاري الصوت</label>
+    <select id="voiceSel"></select>
+    <label for="rateIn">سرعة الكلام</label>
+    <div class="rate"><span>أبطأ</span><input type="range" id="rateIn" min="0.7" max="1.1" step="0.02"><span>أسرع</span></div>
+    <p class="note" id="voiceHint">أحلى صوت بنت مصري هو <b>صوت سلمى</b>، وبيظهر لما تفتحي الصفحة من متصفح <b>Microsoft Edge</b> على الكمبيوتر. على الموبايل، اختاري أي صوت مكتوب جنبه "صوت بنت".</p>
+    <div class="qbtns"><button class="pill alt" id="tryBtn">جرّبي الصوت</button><button class="pill" id="setDone">تمام</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- drawing helpers ---------- */
+const INK='var(--ink)';
+const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" class="t" font-size="${o.z||16}" text-anchor="${o.a||'middle'}" fill="${o.f||INK}">${s}</text>`;
+const svg=c=>`<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#2a2335"/></marker>
+<marker id="ahc" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#e2553f"/></marker>
+<marker id="ahg" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#4f9a52"/></marker></defs>${c}</svg>`;
+function star(cx,cy,r,ri=r*.45){let p=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,rr=k%2?ri:r;p.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1))}return p.join(' ')}
+const arrow=(x1,y1,x2,y2,c='#2a2335',m='ah',w=4,dash='')=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round" marker-end="url(#${m})" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+function egypt(tr='',extra=''){return `<g transform="${tr}">
+<rect x="70" y="20" width="260" height="225" rx="8" fill="#fffdf5" stroke="#2a2335" stroke-width="3"/>
+<path d="M72 22H328V56Q300 62 268 58Q230 66 190 58Q140 66 72 58Z" fill="var(--water)"/>
+<path d="M72 58Q140 66 190 58Q230 66 268 58L328 56V243H72Z" fill="var(--land)"/>
+<path d="M266 64L279 62L328 176V214Z" fill="var(--water)"/><path d="M291 60L299 60L290 94Z" fill="var(--water)"/>
+<path d="M203 243C208 222 214 214 206 196C196 176 182 168 190 146C198 124 184 104 192 82" fill="none" stroke="var(--river)" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M192 82L176 61M192 82L192 60M192 82L208 61" stroke="var(--river)" stroke-width="2.5" fill="none"/>
+<path d="M204 212q14 3 9 18q-12 6 -15 -6z" fill="var(--water)"/>
+<circle cx="192" cy="86" r="5" fill="var(--coral)" stroke="#fff" stroke-width="1.5"/>${T(183,90,'القاهرة',{z:12,a:'end'})}
+<circle cx="207" cy="197" r="4" fill="#2a2335"/>${T(198,201,'أسوان',{z:12,a:'end'})}
+${T(200,44,'البحر المتوسط',{z:11,f:'var(--sea)'})}${extra}</g>`}
+function miniPlan(x,y,w,h){const g=w/4,hy=h*.22;return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#2a2335" stroke-width="3"/>
+<rect x="${x}" y="${y}" width="${w}" height="${hy}" fill="var(--leaf)"/>${T(x+w/2,y+hy*.7,'الجنينة',{z:12,f:'#fff'})}
+<line x1="${x+w/2}" y1="${y+hy}" x2="${x+w/2}" y2="${y+h}" stroke="#2a2335" stroke-width="3"/>
+<line x1="${x+w/2}" y1="${y+hy+(h-hy)*.4}" x2="${x+w}" y2="${y+hy+(h-hy)*.4}" stroke="#2a2335" stroke-width="3"/>
+<line x1="${x+w/2}" y1="${y+hy+(h-hy)*.62}" x2="${x+w}" y2="${y+hy+(h-hy)*.62}" stroke="#2a2335" stroke-width="3"/>
+<rect x="${x+w/2+2}" y="${y+hy+(h-hy)*.4+2}" width="${w/2-4}" height="${(h-hy)*.22-4}" fill="#d5edf6"/>
+<line x1="${x}" y1="${y+hy+(h-hy)*.66}" x2="${x+w/2}" y2="${y+hy+(h-hy)*.66}" stroke="#2a2335" stroke-width="3"/>
+${T(x+w*.75,y+hy+(h-hy)*.25,'أوضة',{z:12})}${T(x+w*.75,y+hy+(h-hy)*.53,'حمام',{z:11})}${T(x+w*.75,y+hy+(h-hy)*.85,'أوضة',{z:12})}
+${T(x+w*.25,y+hy+(h-hy)*.36,'استقبال',{z:12})}${T(x+w*.25,y+hy+(h-hy)*.88,'مطبخ',{z:12})}`}
+const satellite=(x,y,s=1)=>`<g transform="translate(${x},${y}) scale(${s})"><rect x="-28" y="-6" width="18" height="12" fill="var(--river)" stroke="#2a2335" stroke-width="1.5"/><rect x="10" y="-6" width="18" height="12" fill="var(--river)" stroke="#2a2335" stroke-width="1.5"/><rect x="-10" y="-9" width="20" height="18" rx="3" fill="#d9d9d9" stroke="#2a2335" stroke-width="2"/><line x1="0" y1="9" x2="0" y2="15" stroke="#2a2335" stroke-width="2"/><circle cx="0" cy="16" r="3" fill="var(--coral)"/></g>`;
+const plane=(x,y,s=1,c='var(--sea)')=>`<g transform="translate(${x},${y}) scale(${s})" fill="${c}"><ellipse rx="24" ry="5"/><polygon points="-4,0 7,0 -5,20 -12,20"/><polygon points="-4,0 7,0 -5,-20 -12,-20"/><polygon points="-18,0 -13,0 -22,-11 -25,-11"/><circle cx="16" cy="-1" r="2" fill="#fff"/></g>`;
+
+/* ---------- glyphs for scene 1 & 10 ---------- */
+const G={
+ globe:`<circle r="14" fill="#cfeaf4" stroke="#2a2335" stroke-width="2"/><path d="M-14 0H14M0-14C-9-5-9 5 0 14M0-14C9-5 9 5 0 14" stroke="#2a2335" stroke-width="1.6" fill="none"/>`,
+ pyramid:`<path d="M-16 12L0-14L16 12Z" fill="#f2c46b" stroke="#2a2335" stroke-width="2" stroke-linejoin="round"/><path d="M0-14L4 12" stroke="#2a2335" stroke-width="1.5"/>`,
+ people:`<g fill="#fff" stroke="#2a2335" stroke-width="1.6"><circle cx="-7" cy="-6" r="5.5"/><circle cx="7" cy="-6" r="5.5"/><path d="M-16 13Q-7-2 1 13Z"/><path d="M-1 13Q7-2 16 13Z"/></g>`,
+ coins:`<g fill="#f3b331" stroke="#2a2335" stroke-width="1.8"><ellipse cy="9" rx="13" ry="5"/><ellipse cy="2" rx="13" ry="5"/><ellipse cy="-5" rx="13" ry="5"/><ellipse cy="-12" rx="13" ry="5"/></g>`,
+ plant:`<path d="M0 20V-4" stroke="var(--leaf)" stroke-width="4"/><path d="M0 4Q-15 0-17-13Q-2-11 0 4Z M0-3Q15-7 17-20Q2-18 0-3Z" fill="var(--leaf)"/><path d="M-20 20H20" stroke="var(--earth)" stroke-width="5" stroke-linecap="round"/>`,
+ plane:plane(0,0,.95),
+ tourist:`<circle cx="12" cy="-14" r="6" fill="var(--sun)"/><path d="M-20 16L0-14L20 16Z" fill="#f2c46b" stroke="#2a2335" stroke-width="2" stroke-linejoin="round"/>`,
+ building:`<rect x="-14" y="-18" width="28" height="36" fill="#c9d6df" stroke="#2a2335" stroke-width="2"/><g fill="var(--sea)"><rect x="-9" y="-12" width="6" height="6"/><rect x="3" y="-12" width="6" height="6"/><rect x="-9" y="0" width="6" height="6"/><rect x="3" y="0" width="6" height="6"/></g><path d="M18 18V-20H-4" stroke="var(--sun)" stroke-width="3" fill="none"/>`,
+ soldier:`<path d="M-20 8A20 18 0 0 1 20 8Z" fill="#6b7b4a" stroke="#2a2335" stroke-width="2"/><line x1="-24" y1="8" x2="24" y2="8" stroke="#2a2335" stroke-width="3" stroke-linecap="round"/><polygon points="${star(0,-4,7)}" fill="var(--sun)"/>`,
+ book:`<path d="M0-10Q-12-16-22-12V12Q-12 8 0 14Q12 8 22 12V-12Q12-16 0-10Z" fill="#fff" stroke="#2a2335" stroke-width="2" stroke-linejoin="round"/><line x1="0" y1="-10" x2="0" y2="14" stroke="#2a2335" stroke-width="2"/><path d="M-17-5H-5M-17 1H-5M5-5H17M5 1H17" stroke="var(--muted)" stroke-width="1.5"/>`
+};
+function card(x,y,c,title,icon,s,z=17){return `<g data-s="${s}"><rect x="${x}" y="${y}" width="150" height="66" rx="16" fill="${c}" stroke="#2a2335" stroke-width="3"/><g transform="translate(${x+28},${y+33})">${icon}</g>${T(x+97,y+40,title,{z,f:'#fff'})}</g>`}
+function person(cx,cy,glyph,label,s,tint){return `<g data-s="${s}"><circle cx="${cx}" cy="${cy}" r="40" fill="${tint}" stroke="#2a2335" stroke-width="3"/><g transform="translate(${cx},${cy})" class="bob">${glyph}</g>${T(cx,cy+58,label,{z:14})}</g>`}
+const starsBg=()=>{let s='';const pts=[[30,30],[80,60],[120,22],[160,80],[250,30],[300,70],[350,25],[370,100],[40,110],[330,140],[90,130],[270,110],[140,140],[20,170],[380,180],[230,80]];pts.forEach((p,i)=>{s+=`<circle class="tw" style="animation-delay:${(i%5)*.4}s" cx="${p[0]}" cy="${p[1]}" r="${i%3?1.6:2.4}" fill="#fff"/>`});return s};
+const confetti=()=>{let s='';const cols=['#e2553f','#f3b331','#4f9a52','#2a86b0','#1d5c74'];for(let i=0;i<26;i++){s+=`<rect class="fall" style="animation-delay:${(i*0.27%3.5).toFixed(2)}s" x="${(i*53)%400}" y="-20" width="8" height="12" rx="2" fill="${cols[i%5]}"/>`}return s};
+
+/* ---------- the lesson ---------- */
+const L1='الدرس الأول',L2='الدرس التاني',L3='الدرس التالت',LR='مراجعة الوحدة';
+const scenes=[
+{l:L1,t:'يعني إيه دراسات اجتماعية؟',art:svg(`
+${arrow(200,130,250,92,'#2a2335','ah',3).replace('<line','<line data-s="4"')}
+<g data-s="4"><line x1="200" y1="130" x2="255" y2="88" stroke="#2a2335" stroke-width="3"/></g>
+<g data-s="5"><line x1="200" y1="130" x2="150" y2="88" stroke="#2a2335" stroke-width="3"/></g>
+<g data-s="6"><line x1="200" y1="130" x2="255" y2="172" stroke="#2a2335" stroke-width="3"/></g>
+<g data-s="7"><line x1="200" y1="130" x2="150" y2="172" stroke="#2a2335" stroke-width="3"/></g>
+<g data-s="1"><g class="float"><polygon points="${star(200,130,62,46).replace(/ /g,' ')}" fill="var(--sun)" stroke="#2a2335" stroke-width="3" stroke-linejoin="round"/>${T(200,126,'الدراسات',{z:15})}${T(200,146,'الاجتماعية',{z:15})}</g></g>
+${card(240,18,'#2a86b0','الجغرافيا',G.globe,4)}
+${card(10,18,'#a8673a','التاريخ',G.pyramid,5)}
+${card(240,176,'#7a4fa0','التربية الوطنية',G.people,6,13)}
+${card(10,176,'#e2553f','الاقتصاد',G.coins,7)}`).replace(/<line data-s="4"[^>]*\/>/,''),
+lines:['أهلاً يا بطلة! النهارده هنعمل رحلة حلوة مع بعض في الوحدة الأولى من الدراسات الاجتماعية.',
+'الدراسات الاجتماعية مادة بتدرس الإنسان والمكان اللي عايش فيه، وإزاي كانت حياته زمان، وإزاي هي دلوقتي.',
+'وبتعلمنا كمان إزاي نبقى مواطنين كويسين، نحب بلدنا ونساعد إنها تكبر وتتطور.',
+'وليها أربع فروع. أولهم الجغرافيا، ودي بتدرس الأرض والخرايط والأماكن اللي بيعيش فيها الإنسان.',
+'وتاني فرع التاريخ، بيحكيلنا اللي حصل زمان، عشان نستفيد منه النهارده وبكرة.',
+'والتربية الوطنية، بتعلمنا حقوقنا وواجباتنا، وإزاي نعيش مع الناس باحترام وتعاون.',
+'والاقتصاد، بيشرح إزاي الإنسان بيستخدم الموارد الطبيعية عشان يجيب كل اللي محتاجه.'],
+q:'قوليلي بقى: إيه هي الفروع الأربعة للدراسات الاجتماعية؟',a:'الجغرافيا، والتاريخ، والتربية الوطنية، والاقتصاد.'},
+
+{l:L1,t:'المخطط: نبص على المكان من فوق',art:svg(`
+<g><rect x="272" y="122" width="82" height="66" fill="#f2c46b" stroke="#2a2335" stroke-width="3"/><path d="M262 124L313 80L364 124Z" fill="var(--coral)" stroke="#2a2335" stroke-width="3" stroke-linejoin="round"/><rect x="302" y="152" width="18" height="36" fill="var(--earth)" stroke="#2a2335" stroke-width="2"/><rect x="282" y="136" width="14" height="14" fill="#d5edf6" stroke="#2a2335" stroke-width="2"/><rect x="330" y="136" width="14" height="14" fill="#d5edf6" stroke="#2a2335" stroke-width="2"/><path d="M262 188H364" stroke="var(--leaf)" stroke-width="6" stroke-linecap="round"/></g>
+<g data-s="2"><g class="float"><path d="M290 36Q298 26 306 36Q314 26 322 36" fill="none" stroke="#2a2335" stroke-width="3.5" stroke-linecap="round"/></g><path d="M306 44L300 74M306 44L320 74" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 4"/></g>
+<g data-s="3">${arrow(252,150,214,150,'var(--coral)','ahc',5)}${miniPlan(40,58,166,150)}</g>
+<g data-s="5"><path d="M214 218A18 18 0 0 1 250 218Z" fill="var(--sun)" stroke="#2a2335" stroke-width="2"/><circle cx="232" cy="229" r="11" fill="var(--skin)" stroke="#2a2335" stroke-width="2"/><rect x="214" y="216" width="36" height="5" rx="2" fill="var(--sun)" stroke="#2a2335" stroke-width="1.5"/>${T(232,256,'المهندس',{z:13})}</g>`),
+lines:['تعالي نتعرف على حاجة اسمها المخطط.',
+'المخطط يعني نرسم المكان رسمة صغيرة، كأننا عصفورة طايرة فوقه وبتبص عليه من فوق.',
+'شوفي البيت ده، لما نبصله من فوق بيبان كده: أوض، وحمام، ومطبخ، وجنينة.',
+'الرسمة دي بتفهّمنا تفاصيل المكان أوضح بكتير من إننا نوصفه بالكلام.',
+'ومين اللي بيرسم المخطط ويصمم المدارس والبيوت والمباني؟ المهندس!',
+'وخدي بالك: لما بنختار طريق نمشي فيه، مش بنفكر في السرعة بس، كمان بنفكر في هدفنا وفي الطريق الأسهل.'],
+q:'يعني إيه مخطط؟ ومين اللي بيرسمه؟',a:'رسم صغير للمكان كأننا شايفينه من فوق، واللي بيرسمه المهندس.'},
+
+{l:L1,t:'نعرف الاتجاهات من الشمس',art:svg(`
+<g data-s="2"><g class="rise"><circle cx="200" cy="32" r="20" fill="var(--sun)" stroke="#2a2335" stroke-width="2.5"/><g stroke="var(--sun)" stroke-width="4" stroke-linecap="round"><line x1="170" y1="32" x2="160" y2="32"/><line x1="230" y1="32" x2="240" y2="32"/><line x1="180" y1="12" x2="174" y2="5"/><line x1="220" y1="12" x2="226" y2="5"/></g></g></g>
+<g data-s="3">${arrow(200,118,200,74,'var(--coral)','ahc',5)}${T(250,82,'شرق',{z:22,f:'var(--coral)'})}${T(250,100,'قدامك',{z:12,f:'var(--muted)'})}</g>
+<g data-s="4">${arrow(200,170,200,212,'#2a2335','ah',5)}${T(200,238,'غرب',{z:22})}${T(200,256,'وراكي',{z:12,f:'var(--muted)'})}</g>
+<g data-s="5">${arrow(256,145,300,145,'var(--sea)','ah',5)}${T(338,150,'جنوب',{z:22,f:'var(--sea)'})}${T(338,170,'على يمينك',{z:12,f:'var(--muted)'})}</g>
+<g data-s="6">${arrow(144,145,100,145,'var(--leaf)','ahg',5)}${T(62,150,'شمال',{z:22,f:'var(--leaf)'})}${T(62,170,'على شمالك',{z:12,f:'var(--muted)'})}</g>
+<g><line x1="166" y1="146" x2="146" y2="152" stroke="var(--skin)" stroke-width="8" stroke-linecap="round"/><line x1="234" y1="146" x2="254" y2="152" stroke="var(--skin)" stroke-width="8" stroke-linecap="round"/><ellipse cx="200" cy="146" rx="36" ry="15" fill="var(--coral)" stroke="#2a2335" stroke-width="3"/><circle cx="200" cy="142" r="16" fill="#4a3426" stroke="#2a2335" stroke-width="2.5"/><path d="M194 128L200 120L206 128Z" fill="var(--skin)"/></g>`),
+lines:['زمان، الناس ماكانش معاهم موبايلات ولا بوصلة، فكانوا بيعرفوا الاتجاهات من الطبيعة: من الشمس والنجوم.',
+'الشمس كل يوم الصبح بتطلع من ناحية الشرق.',
+'تخيلي إنك واقفة الصبح ووشك ناحية الشمس، يبقى إنتي بصّة ناحية الشرق.',
+'واللي وراكي، في ضهرك، ده الغرب.',
+'وعلى إيدك اليمين يبقى الجنوب.',
+'وعلى إيدك الشمال يبقى اتجاه الشمال!'],
+q:'لو وقفتي الصبح ووشك للشمس، الغرب هيبقى فين؟ والجنوب؟',a:'الغرب هيبقى ورايا (خلفي)، والجنوب على إيدي اليمين.'},
+
+{l:L1,t:'الاتجاهات الأصلية والفرعية',art:svg(`
+<g data-s="2">${arrow(200,135,200,46,'var(--coral)','ahc',5)}${arrow(200,135,200,222)}${arrow(200,135,300,135)}${arrow(200,135,100,135)}
+${T(200,34,'شمال',{z:20,f:'var(--coral)'})}${T(200,252,'جنوب',{z:20})}${T(334,141,'شرق',{z:20})}${T(66,141,'غرب',{z:20})}</g>
+<g data-s="4">${arrow(200,135,252,83,'var(--leaf)','ahg',3.5,'6 5')}${arrow(200,135,148,83,'var(--leaf)','ahg',3.5,'6 5')}${arrow(200,135,252,187,'var(--leaf)','ahg',3.5,'6 5')}${arrow(200,135,148,187,'var(--leaf)','ahg',3.5,'6 5')}
+${T(296,74,'شمال شرق',{z:13,f:'var(--leaf)'})}${T(104,74,'شمال غرب',{z:13,f:'var(--leaf)'})}${T(296,204,'جنوب شرق',{z:13,f:'var(--leaf)'})}${T(104,204,'جنوب غرب',{z:13,f:'var(--leaf)'})}</g>
+<g data-s="5"><circle class="pulse" cx="140" cy="76" r="26" fill="none" stroke="var(--sun)" stroke-width="5"/></g>
+<circle cx="200" cy="135" r="10" fill="var(--sun)" stroke="#2a2335" stroke-width="3"/>`),
+lines:['الاتجاهات بتساعدنا نوصف مكان أي حاجة بالنسبة للحاجات اللي حواليها.',
+'عندنا أربع اتجاهات أصلية: الشمال، والجنوب، والشرق، والغرب.',
+'وبين كل اتجاهين أصليين، فيه اتجاه فرعي.',
+'وهما: الشمال الشرقي، والشمال الغربي، والجنوب الشرقي، والجنوب الغربي.',
+'يعني مثلاً، الشمال الغربي بيقع بين الشمال والغرب.'],
+q:'الشمال الغربي بيقع بين أنهي اتجاهين؟',a:'بين الشمال والغرب.'},
+
+{l:L1,t:'نعرف الاتجاهات من النجوم',art:svg(`
+<rect x="0" y="0" width="400" height="260" rx="18" fill="var(--night)"/>${starsBg()}
+<path d="M0 215Q100 200 200 210T400 205V260H0Z" fill="#3b3550"/>
+<path d="M40 214L95 158L150 214Z" fill="#c9a25e"/><path d="M95 158L110 214" stroke="#8a6a32" stroke-width="2"/>
+<g data-s="2"><circle class="pulse" cx="200" cy="48" r="28" fill="var(--sun)" opacity=".3"/><polygon points="${star(200,48,17,7)}" fill="#fff7c2"/>${T(232,53,'النجم القطبي',{z:14,f:'#fff',a:'start'})}</g>
+<g data-s="3">${arrow(200,76,200,198,'var(--coral)','ahc',4,'8 6')}${T(200,242,'الشمال',{z:22,f:'var(--sun)'})}</g>
+<g><circle cx="300" cy="170" r="9" fill="var(--skin)"/><path d="M292 166Q300 154 310 166V178H292Z" fill="#2b4fa0"/><path d="M300 180V206M300 206L292 214M300 206L308 214" stroke="#f2e6c8" stroke-width="5" stroke-linecap="round"/><line x1="300" y1="186" x2="276" y2="164" stroke="var(--skin)" stroke-width="4" stroke-linecap="round"/></g>`),
+lines:['وبالليل، لما الشمس تغيب، الناس كانت بتعرف الاتجاهات إزاي؟ كانوا بيبصوا للنجوم!',
+'المصريين القدماء استعانوا بنجم مهم اسمه النجم القطبي الشمالي، عشان يحددوا الاتجاهات بالليل.',
+'ده نجم لامع في السما، ودايماً بيشاور على الشمال.',
+'ولما يعرفوا مكان الشمال، يقدروا يعرفوا باقي الاتجاهات كلها.',
+'وده بيورّينا إن المصريين القدماء كانوا شاطرين جداً في علم الفلك.'],
+q:'ليه المصريين القدماء استعانوا بالنجم القطبي؟ وبيشاور على أنهي جهة؟',a:'عشان يحددوا الاتجاهات بالليل، وهو دايماً بيشاور على الشمال.'},
+
+{l:L1,t:'أدوات تحديد الاتجاهات',art:svg(`
+<g data-s="2"><circle cx="130" cy="130" r="80" fill="#c8963e" stroke="#2a2335" stroke-width="3"/><circle cx="130" cy="130" r="66" fill="var(--paper)" stroke="#2a2335" stroke-width="2"/>
+<g stroke="#2a2335" stroke-width="2">${[0,45,90,135,180,225,270,315].map(a=>`<line x1="130" y1="68" x2="130" y2="${a%90?74:78}" transform="rotate(${a} 130 130)"/>`).join('')}</g>
+${T(130,96,'ش',{z:18,f:'var(--coral)'})}${T(130,180,'ج',{z:18})}${T(172,137,'ق',{z:18})}${T(88,137,'غ',{z:18})}
+<g class="needle" style="transform-origin:130px 130px"><polygon points="130,74 140,130 120,130" fill="var(--coral)"/><polygon points="130,186 140,130 120,130" fill="#8a8a96"/></g><circle cx="130" cy="130" r="7" fill="var(--sun)" stroke="#2a2335" stroke-width="2"/>
+${T(130,236,'البوصلة',{z:16})}</g>
+<g data-s="4"><rect x="270" y="44" width="92" height="170" rx="16" fill="#2a2335"/><rect x="278" y="58" width="76" height="138" rx="8" fill="#0f2f3d"/>
+<circle cx="316" cy="118" r="28" fill="none" stroke="#fff" stroke-width="2"/><g class="spin" style="animation-duration:6s"><polygon points="316,94 322,118 310,118" fill="var(--coral)"/><polygon points="316,142 322,118 310,118" fill="#fff"/></g>
+${T(316,172,'شمال',{z:14,f:'#fff'})}${T(316,236,'البوصلة الرقمية',{z:14})}</g>
+<g data-s="5"><polygon class="tw" points="${star(372,60,9)}" fill="var(--sun)"/><polygon class="tw" style="animation-delay:.8s" points="${star(258,180,7)}" fill="var(--sun)"/></g>`),
+lines:['وفيه كمان أدوات نقدر نعرف بيها الاتجاهات.',
+'أولها البوصلة: جواها إبرة مغناطيسية بتشاور دايماً على اتجاه الشمال المغناطيسي.',
+'ومن خلالها نقدر نحدد باقي الاتجاهات.',
+'والنهارده فيه البوصلة الرقمية، اللي موجودة جوة الموبايلات الذكية.',
+'بنستخدمها عشان نحدد الاتجاهات بسرعة ودقة أكبر.'],
+q:'ليه بنستخدم البوصلة الرقمية اللي في الموبايل؟',a:'عشان نحدد الاتجاهات بسرعة ودقة أكبر.'},
+
+{l:L2,t:'المخطط والخريطة',art:svg(`
+<g data-s="2">${miniPlan(256,62,124,128)}${T(318,214,'المخطط',{z:16})}</g>
+<g data-s="3">${arrow(246,128,204,128,'var(--coral)','ahc',5)}${egypt('translate(-12,46) scale(.6)')}${T(110,214,'الخريطة',{z:16})}</g>
+<g data-s="4"><rect x="282" y="226" width="100" height="30" rx="15" fill="var(--coral)"/>${T(332,247,'رموز',{z:14,f:'#fff'})}<rect x="150" y="226" width="100" height="30" rx="15" fill="var(--leaf)"/>${T(200,247,'ألوان',{z:14,f:'#fff'})}<rect x="18" y="226" width="100" height="30" rx="15" fill="var(--sea)"/>${T(68,247,'مقياس رسم',{z:14,f:'#fff'})}</g>`),
+lines:['يلا بينا على الدرس التاني: الخريطة في حياتنا!',
+'فاكرة المخطط؟ المخطط ده شكل بسيط لفكرة الخريطة.',
+'أما الخريطة، فهي رسم مصغّر بيوضح سطح الأرض كله، أو جزء منه.',
+'وبنستخدم فيها رموز، وألوان، ومقياس رسم محدد.'],
+q:'يعني إيه خريطة؟',a:'رسم مصغر بيوضح سطح الأرض أو جزء منه، باستخدام الرموز والألوان ومقياس رسم محدد.'},
+
+{l:L2,t:'عناصر الخريطة الأربعة',art:svg(`
+${egypt('translate(30,22) scale(.85)',`
+<g data-s="3"><polygon points="${star(110,98,20,6)}" fill="#2a2335"/><polygon points="110,78 115,98 105,98" fill="var(--coral)"/>${T(110,72,'ش',{z:13})}</g>
+<g data-s="4"><line x1="232" y1="232" x2="312" y2="232" stroke="#2a2335" stroke-width="4"/><line x1="232" y1="226" x2="232" y2="238" stroke="#2a2335" stroke-width="3"/><line x1="272" y1="228" x2="272" y2="236" stroke="#2a2335" stroke-width="3"/><line x1="312" y1="226" x2="312" y2="238" stroke="#2a2335" stroke-width="3"/>${T(272,222,'٢٠٠ كم',{z:12})}</g>
+<g data-s="5"><rect x="80" y="182" width="86" height="56" rx="4" fill="#fff" stroke="#2a2335" stroke-width="2"/><circle cx="154" cy="196" r="5" fill="var(--coral)"/>${T(146,200,'العاصمة',{z:11,a:'end'})}<line x1="146" y1="211" x2="162" y2="211" stroke="var(--river)" stroke-width="3"/>${T(142,215,'نهر النيل',{z:11,a:'end'})}<rect x="146" y="222" width="16" height="10" fill="var(--water)"/>${T(142,231,'بحر',{z:11,a:'end'})}</g>`)}
+<g data-s="2"><rect x="96" y="2" width="148" height="30" rx="8" fill="var(--sun)" stroke="#2a2335" stroke-width="2.5"/>${T(170,23,'خريطة مصر',{z:16})}</g>
+<g data-s="2"><line x1="246" y1="18" x2="282" y2="38" stroke="var(--coral)" stroke-width="2" stroke-dasharray="4 3"/><rect x="282" y="24" width="112" height="30" rx="15" fill="var(--coral)"/>${T(338,44,'١ عنوان الخريطة',{z:13,f:'#fff'})}</g>
+<g data-s="3"><line x1="140" y1="105" x2="282" y2="96" stroke="var(--coral)" stroke-width="2" stroke-dasharray="4 3"/><rect x="282" y="82" width="112" height="30" rx="15" fill="var(--coral)"/>${T(338,102,'٢ وردة البوصلة',{z:13,f:'#fff'})}</g>
+<g data-s="4"><line x1="262" y1="218" x2="300" y2="170" stroke="var(--coral)" stroke-width="2" stroke-dasharray="4 3"/><rect x="282" y="140" width="112" height="30" rx="15" fill="var(--coral)"/>${T(338,160,'٣ مقياس الرسم',{z:13,f:'#fff'})}</g>
+<g data-s="5"><line x1="172" y1="208" x2="282" y2="212" stroke="var(--coral)" stroke-width="2" stroke-dasharray="4 3"/><rect x="282" y="198" width="112" height="30" rx="15" fill="var(--coral)"/>${T(338,218,'٤ مفتاح الخريطة',{z:13,f:'#fff'})}</g>`),
+lines:['أي خريطة ليها أربع عناصر أساسية. تعالي نتعرف عليهم واحد واحد.',
+'أولاً: عنوان الخريطة، وده بيقولنا الخريطة دي عن إيه، زي: خريطة جمهورية مصر العربية.',
+'تانياً: وردة البوصلة، بتساعدنا نحدد الاتجاهات ومواقع الأماكن على الخريطة.',
+'تالتاً: مقياس الرسم، بيقولنا المسافة على الخريطة تساوي كام على أرض الواقع.',
+'رابعاً: مفتاح الخريطة، بيشرحلنا معنى الألوان والرموز اللي في الخريطة.'],
+q:'إيه العنصر اللي بيشرح معنى الرموز والألوان على الخريطة؟',a:'مفتاح الخريطة.'},
+
+{l:L2,t:'نحسب المسافة بمقياس الرسم',art:svg(`
+<g data-s="1"><line class="draw" x1="330" y1="70" x2="70" y2="70" stroke="var(--coral)" stroke-width="3" stroke-dasharray="8 6"/><circle cx="330" cy="70" r="9" fill="var(--coral)" stroke="#2a2335" stroke-width="2"/>${T(330,48,'القاهرة',{z:16})}<circle cx="70" cy="70" r="9" fill="#2a2335"/>${T(70,48,'سوهاج',{z:16})}</g>
+<g data-s="2"><rect x="58" y="108" width="284" height="40" rx="4" fill="var(--sun)" stroke="#2a2335" stroke-width="3"/>
+${[0,1,2,3,4,5].map(k=>`<line x1="${340-56*k}" y1="108" x2="${340-56*k}" y2="128" stroke="#2a2335" stroke-width="2.5"/>${T(340-56*k,143,['٠','١','٢','٣','٤','٥'][k],{z:13})}`).join('')}
+${T(200,168,'٥ سم على الخريطة',{z:14,f:'var(--muted)'})}</g>
+<g data-s="3">${[0,1,2,3,4].map(k=>`<g class="pulse" style="animation-delay:${k*.3}s">${T(312-56*k,100,'١٠٠ كم',{z:11,f:'var(--sea)'})}</g>`).join('')}</g>
+<g data-s="4"><rect x="296" y="184" width="70" height="38" rx="10" fill="#fff" stroke="#2a2335" stroke-width="2.5"/>${T(331,209,'٥ سم',{z:16})}${T(268,210,'×',{z:24})}<rect x="166" y="184" width="76" height="38" rx="10" fill="#fff" stroke="#2a2335" stroke-width="2.5"/>${T(204,209,'١٠٠ كم',{z:16})}</g>
+<g data-s="5">${T(144,210,'=',{z:24})}<g class="pulse"><rect x="34" y="180" width="88" height="46" rx="12" fill="var(--coral)" stroke="#2a2335" stroke-width="3"/>${T(78,210,'٥٠٠ كم',{z:19,f:'#fff'})}</g></g>`),
+lines:['عايزين نعرف المسافة الحقيقية بين مدينة القاهرة ومدينة سوهاج. هنستخدم مقياس الرسم!',
+'نقيس المسافة بينهم على الخريطة بالمسطرة، تطلع خمسة سنتي.',
+'ومقياس الرسم بيقول: كل واحد سنتي على الخريطة يساوي مية كيلو على أرض الواقع.',
+'يبقى نضرب عدد السنتيمترات في مقياس الرسم: خمسة في مية...',
+'يطلع خمسمية كيلو متر! دي المسافة الحقيقية بين القاهرة وسوهاج.'],
+q:'المسافة بين مدينتين على الخريطة ستة سنتي، والمقياس: كل سنتي يساوي خمستاشر كيلو. المسافة الحقيقية كام؟',a:'٦ × ١٥ = ٩٠ كيلو متر.'},
+
+{l:L2,t:'الألوان على الخريطة',art:svg(`
+<g data-s="2"><rect x="280" y="34" width="104" height="126" rx="14" fill="#f3e3c7" stroke="#2a2335" stroke-width="3"/><polygon points="290,150 324,74 358,150" fill="var(--earth)" stroke="#2a2335" stroke-width="2" stroke-linejoin="round"/><polygon points="326,150 352,96 378,150" fill="#8a5230" stroke="#2a2335" stroke-width="2" stroke-linejoin="round"/><polygon points="314,96 324,74 334,96" fill="#fff"/>${T(332,188,'بني',{z:22,f:'var(--earth)'})}${T(332,212,'جبال وهضاب',{z:13})}</g>
+<g data-s="3"><rect x="148" y="34" width="104" height="126" rx="14" fill="#e1f1d5" stroke="#2a2335" stroke-width="3"/><circle cx="222" cy="64" r="12" fill="var(--sun)"/><rect x="150" y="108" width="100" height="50" fill="var(--leaf)"/><g stroke="#2f6d33" stroke-width="2.5" stroke-linecap="round">${[160,176,192,208,224,240].map(x=>`<path d="M${x} 130l-3-8M${x} 130l3-8"/>`).join('')}</g>${T(200,188,'أخضر',{z:22,f:'var(--leaf)'})}${T(200,212,'سهول',{z:13})}</g>
+<g data-s="4"><rect x="16" y="34" width="104" height="126" rx="14" fill="var(--water)" stroke="#2a2335" stroke-width="3"/><g class="wave" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"><path d="M28 80q12-10 24 0t24 0t24 0"/><path d="M24 110q12-10 24 0t24 0t24 0"/><path d="M28 140q12-10 24 0t24 0t24 0"/></g>${T(68,188,'أزرق',{z:22,f:'var(--river)'})}${T(68,212,'بحار ومحيطات',{z:13})}</g>`),
+lines:['الألوان على الخريطة مش للزينة بس! كل لون ليه معنى، ومتدرجة حسب ارتفاع الأرض.',
+'اللون البني معناه أراضي عالية ومرتفعة، زي الجبال والهضاب.',
+'اللون الأخضر معناه أراضي أقل ارتفاعاً، زي السهول.',
+'واللون الأزرق معناه مية، يعني المسطحات المائية زي البحار والمحيطات.'],
+q:'اللون الأخضر على الخريطة بيدل على إيه؟ والبني؟ والأزرق؟',a:'الأخضر: السهول. البني: الجبال والهضاب. الأزرق: البحار والمحيطات.'},
+
+{l:L2,t:'مين بيستخدم الخريطة؟',art:svg(`
+<g opacity=".22" stroke-width="5" fill="none" stroke-linecap="round"><path d="M0 120H400" stroke="var(--coral)"/><path d="M130 0V260" stroke="var(--river)"/><path d="M270 0V260" stroke="var(--leaf)"/></g>
+${person(330,58,G.plant,'المزارع',2,'#e1f1d5')}
+${person(200,58,G.plane,'الطيار والقبطان',3,'#d5edf6')}
+${person(70,58,G.tourist,'السايح',4,'#fdeec4')}
+${person(330,178,G.building,'المهندس',5,'#e6e9ef')}
+${person(200,178,G.soldier,'الجندي',6,'#e7ecd9')}
+${person(70,178,G.book,'المعلمة والتلميذة',7,'#f9e3dc')}`),
+lines:['الخريطة مهمة قوي في حياتنا، بتساعدنا نعرف الأماكن اللي حوالينا. زي الخريطة اللي في محطة مترو الأنفاق في القاهرة.',
+'المزارع بيستخدمها عشان يحدد مكان الأرض الزراعية.',
+'وقائد الطيارة وقبطان المركب بيستخدموها عشان يحددوا مسار الرحلات.',
+'والسايح بيستخدمها عشان يوصل للأماكن السياحية والأثرية.',
+'والمهندس بيستخدمها في التخطيط عشان يبني المباني والطرق.',
+'والجندي بيستخدمها عشان يحدد المواقع العسكرية.',
+'والمعلمة بتشرح بيها، والتلميذة بتذاكر بيها، زيك بالظبط!'],
+q:'المزارع بيستخدم الخريطة في إيه؟ والطيار؟ والتلميذ؟',a:'المزارع يحدد مكان الأرض الزراعية، والطيار يحدد مسار الرحلات، والتلميذ في المذاكرة.'},
+
+{l:L3,t:'الخريطة زمان: المصريين القدماء',art:svg(`
+<g data-s="2"><rect x="34" y="52" width="180" height="158" fill="#ecd7a3" stroke="var(--earth)" stroke-width="2.5"/><rect x="24" y="44" width="16" height="174" rx="8" fill="#d9bd7d" stroke="var(--earth)" stroke-width="2"/><rect x="208" y="44" width="16" height="174" rx="8" fill="#d9bd7d" stroke="var(--earth)" stroke-width="2"/>${T(124,236,'ورق البردي',{z:15})}</g>
+<g data-s="3"><path class="draw" d="M150 204C160 176 118 156 134 126C150 96 118 86 128 62" fill="none" stroke="var(--river)" stroke-width="5" stroke-linecap="round"/>${T(172,140,'النيل',{z:13,f:'var(--river)',a:'start'})}</g>
+<g data-s="4"><polygon points="62,124 76,104 90,124" fill="var(--earth)"/><polygon points="70,184 84,164 98,184" fill="var(--earth)"/>${T(76,140,'منجم',{z:11})}${T(84,200,'منجم',{z:11})}</g>
+<g data-s="5"><rect x="238" y="56" width="148" height="16" fill="#c9a25e" stroke="var(--earth)" stroke-width="2"/><rect x="246" y="72" width="132" height="138" fill="#e4c58a" stroke="var(--earth)" stroke-width="2"/>
+${[256,300,344].map(x=>`<rect x="${x}" y="80" width="24" height="124" fill="#d6b06c" stroke="var(--earth)" stroke-width="1.5"/><circle cx="${x+12}" cy="100" r="4" fill="none" stroke="var(--earth)" stroke-width="2"/><path d="M${x+5} 124h14M${x+12} 140v14M${x+6} 170q6-8 12 0" stroke="var(--earth)" stroke-width="2" fill="none"/>`).join('')}
+${T(312,236,'جدران المعابد',{z:15})}</g>`),
+lines:['الدرس التالت: تطور الخريطة. يعني الخريطة كان شكلها إيه زمان، وبقت إزاي دلوقتي.',
+'المصريين القدماء استخدموا المخططات والخرايط من آلاف السنين.',
+'عشان يوصفوا مسار نهر النيل...',
+'...ويعرفوا مواقع المناجم.',
+'وكانوا بيرسموا الخرايط دي على ورق البردي، وعلى جدران المعابد.'],
+q:'المصريين القدماء رسموا الخرايط على إيه؟ وليه؟',a:'على ورق البردي وجدران المعابد، عشان يوصفوا مسار نهر النيل ومواقع المناجم.'},
+
+{l:L3,t:'العلماء العرب',art:svg(`
+<g data-s="2"><rect x="212" y="40" width="172" height="196" rx="18" fill="#fff" stroke="#2a2335" stroke-width="3"/><circle cx="298" cy="102" r="30" fill="var(--skin)" stroke="#2a2335" stroke-width="2"/><ellipse cx="298" cy="74" rx="36" ry="18" fill="var(--sun)" stroke="#2a2335" stroke-width="2"/><path d="M274 112Q298 150 322 112Q310 124 298 124Q286 124 274 112Z" fill="#4a3426"/><circle cx="288" cy="100" r="3" fill="#2a2335"/><circle cx="308" cy="100" r="3" fill="#2a2335"/>
+${T(298,162,'الإدريسي',{z:19})}${T(298,182,'رسم خريطة للعالم',{z:12,f:'var(--muted)'})}<g transform="translate(298,210)">${G.globe}</g></g>
+<g data-s="3"><rect x="16" y="40" width="172" height="196" rx="18" fill="#fff" stroke="#2a2335" stroke-width="3"/><circle cx="102" cy="102" r="38" fill="var(--coral)" stroke="#2a2335" stroke-width="2"/><circle cx="102" cy="104" r="23" fill="var(--skin)"/><circle cx="94" cy="102" r="3" fill="#2a2335"/><circle cx="110" cy="102" r="3" fill="#2a2335"/><path d="M95 113q7 5 14 0" stroke="#2a2335" stroke-width="2" fill="none"/>
+${T(102,162,'مريم الإسطرلابي',{z:15})}${T(102,182,'القرن ٤ الهجري',{z:12,f:'var(--muted)'})}${T(102,198,'القرن ١٠ الميلادي',{z:12,f:'var(--muted)'})}<circle cx="102" cy="220" r="10" fill="#e6c47a" stroke="#6b4a1a" stroke-width="2.5"/></g>
+<g data-s="6"><g class="fly"><path d="M-10 18H-60M-10 24H-46M-10 12H-40" stroke="var(--sun)" stroke-width="3" stroke-linecap="round"/><ellipse cx="0" cy="18" rx="13" ry="10" fill="#8a8a96" stroke="#2a2335" stroke-width="2"/>${T(20,24,'كويكب باسمها!',{z:12,f:'var(--coral)',a:'start'})}</g></g>`),
+lines:['العلماء العرب كمان كانوا شاطرين جداً في رسم الخرايط.',
+'أشهرهم الإدريسي، وأهم حاجة عملها إنه رسم خريطة للعالم.',
+'وكمان العالمة مريم الإسطرلابي، عاشت في القرن الرابع الهجري، يعني القرن العاشر الميلادي.',
+'اتفوقت في علم الفلك، عشان اتأثرت بباباها اللي كان عالم فلك.',
+'استخدمت حسابات رياضية دقيقة عشان تطور جهاز اسمه الإسطرلاب، وعشان كده اشتهرت بلقب الإسطرلابي.',
+'وفي العصر الحديث، سمّوا كويكب في الفضاء على اسمها، اعترافاً بمجهودها الكبير في علم الفلك!'],
+q:'مين العالم العربي اللي رسم خريطة للعالم؟ وليه مريم اتسمت الإسطرلابي؟',a:'الإدريسي. ومريم اشتهرت بالإسطرلابي لأنها طورت جهاز الإسطرلاب بحسابات رياضية دقيقة.'},
+
+{l:L3,t:'يعني إيه إسطرلاب؟',art:svg(`
+<g data-s="2"><circle cx="125" cy="38" r="11" fill="none" stroke="#6b4a1a" stroke-width="5"/><circle cx="125" cy="138" r="90" fill="#c8963e" stroke="#6b4a1a" stroke-width="3"/><circle cx="125" cy="138" r="75" fill="#e6c47a" stroke="#6b4a1a" stroke-width="2"/>
+<g fill="none" stroke="#a87a2a" stroke-width="1.5"><circle cx="125" cy="138" r="55"/><circle cx="125" cy="138" r="35"/><line x1="50" y1="138" x2="200" y2="138"/><line x1="125" y1="63" x2="125" y2="213"/></g>
+<g class="spin"><circle cx="125" cy="138" r="62" fill="none" stroke="#6b4a1a" stroke-width="3"/><circle cx="140" cy="122" r="30" fill="none" stroke="#6b4a1a" stroke-width="2.5"/>${[[125,76],[178,108],[180,170],[72,170],[70,108]].map(p=>`<polygon points="${star(p[0],p[1],7,3)}" fill="#6b4a1a"/>`).join('')}</g>
+<g class="spinr"><rect x="45" y="134" width="160" height="8" rx="4" fill="#6b4a1a"/></g><circle cx="125" cy="138" r="7" fill="var(--sun)" stroke="#6b4a1a" stroke-width="2"/></g>
+<g data-s="3"><rect x="244" y="46" width="146" height="48" rx="24" fill="var(--sea)"/>${T(317,76,'أوقات الصلاة',{z:15,f:'#fff'})}</g>
+<g data-s="4"><rect x="244" y="112" width="146" height="48" rx="24" fill="var(--leaf)"/>${T(317,142,'اتجاه القبلة',{z:15,f:'#fff'})}</g>
+<g data-s="5"><rect x="244" y="178" width="146" height="48" rx="24" fill="var(--coral)"/>${T(317,208,'بداية الشهور القمرية',{z:12.5,f:'#fff'})}</g>`),
+lines:['طب يعني إيه إسطرلاب؟',
+'ده أداة فلكية قديمة، كانوا بيحددوا بيها الاتجاهات والمواقع من خلال النجوم.',
+'وكانوا بيستخدموه عشان يعرفوا أوقات الصلاة...',
+'...واتجاه القبلة...',
+'...وبداية الشهور القمرية.'],
+q:'اذكري استخدامين للإسطرلاب.',a:'تحديد أوقات الصلاة، واتجاه القبلة، وبداية الشهور القمرية.'},
+
+{l:L3,t:'الخريطة النهارده: GPS',art:svg(`
+<g data-s="1"><rect x="288" y="12" width="94" height="62" rx="4" fill="#ecd7a3" stroke="var(--earth)" stroke-width="2"/><path d="M298 60q20-30 40-10t34-24" fill="none" stroke="var(--coral)" stroke-width="2.5" stroke-dasharray="5 4"/><path d="M364 26l8 8M372 26l-8 8" stroke="var(--coral)" stroke-width="3"/></g>
+<g data-s="2">${arrow(335,78,335,96,'var(--coral)','ahc',4)}<rect x="292" y="100" width="86" height="150" rx="14" fill="#2a2335"/><rect x="299" y="112" width="72" height="124" rx="6" fill="#eef5f0"/><path d="M299 150H371M330 112V236M299 200L371 176" stroke="#d3d9dd" stroke-width="6"/><path d="M312 222L330 200L352 170" stroke="var(--coral)" stroke-width="4" fill="none" stroke-linecap="round"/><g class="bob"><path d="M352 168c-9-12-9-24 0-24s9 12 0 24z" fill="var(--coral)" stroke="#2a2335" stroke-width="1.5"/><circle cx="352" cy="152" r="3.5" fill="#fff"/></g></g>
+<g data-s="3"><circle cx="128" cy="150" r="66" fill="var(--river)" stroke="#2a2335" stroke-width="3"/><path d="M88 118q20-14 34 0t10 26q-14 10-30 0t-14-26zM134 168q16-8 30 4t-4 26q-16 4-24-10t-2-20z" fill="var(--leaf)"/>
+<ellipse cx="128" cy="150" rx="104" ry="100" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 5"/>
+<g class="orbit" style="transform-origin:128px 150px">${satellite(128,50,1)}${satellite(128,250,.8)}</g>
+<path class="blink" d="M200 90L298 150" stroke="var(--sun)" stroke-width="3" stroke-dasharray="6 6"/>${T(236,60,'أقمار صناعية',{z:13,f:'var(--sea)'})}</g>`),
+lines:['دلوقتي بقى، انتقلنا من الخرايط البسيطة المرسومة بالإيد، للخرايط الرقمية الدقيقة.',
+'زي الخرايط اللي بيعرضها تطبيق جي بي إس على الموبايل. وجي بي إس يعني نظام تحديد المواقع العالمي.',
+'النظام ده بيعتمد على الأقمار الصناعية اللي بتلف حوالين الأرض، عشان يحدد المواقع والاتجاهات.',
+'وهو تطور حديث للأدوات القديمة اللي كانوا بيحددوا بيها المواقع، زي الإسطرلاب.'],
+q:'نظام GPS بيعتمد على إيه عشان يحدد المواقع؟',a:'بيعتمد على الأقمار الصناعية.'},
+
+{l:L3,t:'الصور الجوية والصور الفضائية',art:svg(`
+<rect x="0" y="212" width="400" height="48" fill="#d8e9c4"/>${[10,40,62,90,150,176,200,232,258,290,320,350,372].map((x,i)=>`<rect x="${x}" y="${200-(i%3)*6}" width="18" height="${12+(i%3)*6}" fill="#c3c9cf" stroke="#2a2335" stroke-width="1"/>`).join('')}
+<g data-s="2"><polygon points="108,72 80,212 136,212" fill="var(--sun)" opacity=".35"/>${plane(108,64,1.3)}<rect x="80" y="214" width="56" height="7" fill="var(--coral)"/>${T(108,28,'صور جوية',{z:16})}${T(108,246,'مساحة صغيرة',{z:12})}</g>
+<g data-s="3"><polygon points="300,56 214,212 386,212" fill="var(--sun)" opacity=".28"/>${satellite(300,40,1.2)}<rect x="214" y="214" width="172" height="7" fill="var(--sea)"/>${T(300,14,'صور فضائية',{z:15})}${T(300,246,'مساحة أوسع',{z:12})}</g>
+<g data-s="4"><rect x="146" y="96" width="112" height="50" rx="14" fill="#fff" stroke="#2a2335" stroke-width="2.5"/>${T(202,117,'الاتنين مصادر',{z:12.5})}${T(202,136,'لرسم الخرايط',{z:12.5})}</g>`),
+lines:['النهارده فيه مصادر كتير بنرسم منها الخرايط، أهمها الصور الجوية والصور الفضائية.',
+'الصور الجوية بتتصور من الجو بالطيارات، وبتغطي مساحة محدودة من سطح الأرض.',
+'أما الصور الفضائية، فبتتصور من الفضاء بالأقمار الصناعية، وبتغطي مساحات أوسع بكتير.',
+'والاتنين شبه بعض في حاجة مهمة: إنهم مصادر لرسم الخرايط.',
+'والصور الفضائية بتوضح أماكن سطح الأرض بدقة أكتر، وبتلقط صور لأماكن واسعة.'],
+q:'إيه الفرق بين الصور الجوية والصور الفضائية؟',a:'الجوية بتتصور بالطيارات وبتغطي مساحة محدودة، والفضائية بالأقمار الصناعية وبتغطي مساحات أوسع.'},
+
+{l:LR,t:'مصادر المعلومات',art:svg(`
+<g data-s="2"><rect x="210" y="34" width="176" height="206" rx="18" fill="#e4f2e0" stroke="var(--leaf)" stroke-width="3"/>${T(298,66,'مصادر أولية',{z:19,f:'#2f6d33'})}
+<rect x="232" y="100" width="54" height="64" fill="#e4c58a" stroke="var(--earth)" stroke-width="2"/><path d="M242 114h34M246 130q8-10 16 0M266 146h10M240 150h16" stroke="var(--earth)" stroke-width="2.5" fill="none"/>${T(259,186,'نقوش المعابد',{z:11.5})}
+<rect x="316" y="106" width="48" height="52" fill="#ecd7a3" stroke="var(--earth)" stroke-width="2"/><rect x="310" y="102" width="10" height="60" rx="5" fill="#d9bd7d"/><rect x="360" y="102" width="10" height="60" rx="5" fill="#d9bd7d"/>${T(340,186,'البرديات',{z:11.5})}
+<rect x="262" y="204" width="72" height="26" rx="13" fill="var(--leaf)"/>${T(298,222,'أدق',{z:14,f:'#fff'})}</g>
+<g data-s="3"><rect x="14" y="34" width="176" height="206" rx="18" fill="#f9e3dc" stroke="var(--coral)" stroke-width="3"/>${T(102,66,'مصادر ثانوية',{z:19,f:'#b23a26'})}
+<rect x="40" y="144" width="54" height="16" fill="var(--sea)" stroke="#2a2335" stroke-width="1.5"/><rect x="44" y="128" width="48" height="16" fill="var(--sun)" stroke="#2a2335" stroke-width="1.5"/><rect x="38" y="112" width="52" height="16" fill="var(--coral)" stroke="#2a2335" stroke-width="1.5"/>${T(66,186,'الموسوعات',{z:11.5})}
+<rect x="112" y="104" width="56" height="58" fill="#fff" stroke="#2a2335" stroke-width="2"/><rect x="118" y="110" width="44" height="10" fill="#2a2335"/><path d="M118 128h44M118 138h44M118 148h30" stroke="var(--muted)" stroke-width="2.5"/>${T(140,186,'المقالات',{z:11.5})}</g>`),
+lines:['في المراجعة، لازم نعرف إن مصادر المعلومات نوعين.',
+'مصادر أولية: زي النقوش على جدران المعابد، والبرديات. ودي أدق من المصادر الثانوية.',
+'ومصادر ثانوية: زي الموسوعات والمقالات.'],
+q:'البرديات مصدر أولي ولا ثانوي؟ والموسوعات؟',a:'البرديات مصدر أولي، والموسوعات مصدر ثانوي.'},
+
+{l:LR,t:'حقيقة ولا رأي ولا شائعة؟',art:svg(`
+<g data-s="2"><circle cx="330" cy="104" r="54" fill="#e1f1d5" stroke="var(--leaf)" stroke-width="4"/><path d="M306 104L324 122L356 88" fill="none" stroke="var(--leaf)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>${T(330,194,'الحقائق',{z:19,f:'#2f6d33'})}${T(330,216,'صح ومتأكدين منها',{z:12})}</g>
+<g data-s="3"><circle cx="200" cy="100" r="50" fill="#fdeec4" stroke="#c48a12" stroke-width="4"/><circle cx="168" cy="160" r="8" fill="#fdeec4" stroke="#c48a12" stroke-width="3"/><circle cx="156" cy="176" r="5" fill="#fdeec4" stroke="#c48a12" stroke-width="3"/>${T(200,98,'أنا',{z:15})}${T(200,118,'شايفة إن...',{z:13})}${T(212,194,'الآراء',{z:19,f:'#9a6a08'})}${T(212,216,'ممكن صح أو غلط',{z:12})}</g>
+<g data-s="4"><circle cx="70" cy="104" r="54" fill="#f9dcd6" stroke="var(--coral)" stroke-width="4"/><path d="M48 82L92 126M92 82L48 126" stroke="var(--coral)" stroke-width="9" stroke-linecap="round"/>${T(70,194,'الشائعات',{z:19,f:'#b23a26'})}${T(70,216,'غلط ومالهاش مصدر',{z:12})}</g>`),
+lines:['وكمان لازم نفرّق بين تلات حاجات بنسمعها كل يوم.',
+'الحقائق: معلومات صحيحة، اتأكدنا منها ونقدر نثبتها.',
+'الآراء: دي وجهة نظر شخصية، ممكن تكون صحيحة وممكن تكون غلط.',
+'الشائعات: أخبار مش صحيحة، الناس بتتناقلها من غير ما تعرف مصدرها. ماينفعش نصدقها!'],
+q:'الأخبار الغلط اللي الناس بتقولها من غير ما تعرف مصدرها، اسمها إيه؟',a:'الشائعات.'},
+
+{l:LR,t:'آخر سؤال!',art:svg(`${confetti()}
+<g data-s="1"><polygon class="pulse" points="${star(200,110,70,32)}" fill="var(--sun)" stroke="#2a2335" stroke-width="4" stroke-linejoin="round"/></g>
+<g data-s="2"><g transform="translate(70,200)">${G.globe}</g><g transform="translate(330,200)"><path d="M0 14c-12-16-12-30 0-30s12 14 0 30z" fill="var(--coral)" stroke="#2a2335" stroke-width="2"/><circle cx="0" cy="-6" r="4" fill="#fff"/></g>${T(200,228,'برافو عليكي!',{z:24,f:'var(--sea)'})}</g>`),
+lines:['برافو عليكي! كده خلصنا الوحدة الأولى كلها.',
+'اتعلمنا الاتجاهات، والخريطة وعناصرها، وإزاي الخريطة اتطورت من ورق البردي لحد الـ جي بي إس.',
+'يلا، آخر سؤال، وبعدها نحتفل!'],
+q:'صح ولا غلط: بنقدر نقرا الخريطة بسهولة من غير مقياس الرسم.',a:'غلط! من غير مقياس الرسم بيصعب نقرا الخريطة.'}
+];
+
+/* ---------- narration by Nour (same line counts as the art steps) ---------- */
+const NARR=[
+[['أهلاً أهلاً يا حبيبتي! أنا مريم، وهكون معاكي النهارده في رحلة حلوة قوي، اسمها رحلة الخريطة.',
+'تعرفي يعني إيه دراسات اجتماعية؟ دي مادة بتعرّفنا على الإنسان، والمكان اللي عايش فيه، وحياته زمان، وحياته دلوقتي.',
+'وكمان بتعلّمنا إزاي نحب بلدنا، ونبقى مواطنين كويسين، نساعدها تكبر وتحلو.',
+'والمادة دي ليها أربع فروع. أول فرع: الجغرافيا، وبتكلمنا عن الأرض، والخرايط، والأماكن اللي بنعيش فيها.',
+'تاني فرع: التاريخ، بيحكيلنا حكايات زمان، عشان نتعلم منها النهارده وبكرة.',
+'تالت فرع: التربية الوطنية، بتعلّمنا حقوقنا وواجباتنا، وإزاي نعيش مع الناس بحب واحترام.',
+'ورابع فرع: الاقتصاد، بيورّينا إزاي بنستخدم خيرات الطبيعة، عشان نجيب كل اللي محتاجينه.'],
+'إيه هي الفروع الأربعة للدراسات الاجتماعية؟','الجغرافيا، والتاريخ، والتربية الوطنية، والاقتصاد.'],
+[['دلوقتي هعرّفك على حاجة اسمها: المخطط.',
+'تخيلي إنك عصفورة صغيرة، طايرة فوق البيت، وبتبصّي عليه من فوق.',
+'هتشوفي البيت كده: دي الأوض، وده الحمام، وده المطبخ، ودي الجنينة. الرسمة دي اسمها مخطط.',
+'يعني المخطط رسمة صغيرة للمكان من فوق، بتفهّمنا تفاصيله أحسن بكتير من الكلام.',
+'طب مين اللي بيرسم المخطط، ويصمم المدارس والبيوت والعمارات؟ أيوه، المهندس!',
+'ومعلومة حلوة كمان: لما بنختار طريق نمشي فيه، مش بندوّر على الأسرع بس، بنفكر كمان في المكان اللي رايحينه، وفي الطريق الأسهل.'],
+'يعني إيه مخطط؟ ومين اللي بيرسمه؟','رسمة صغيرة للمكان كأننا شايفينه من فوق، واللي بيرسمها المهندس.'],
+[['زمان خالص، ماكانش فيه موبايلات ولا بوصلة. طب الناس كانت بتعرف الاتجاهات إزاي؟ من الطبيعة! من الشمس والنجوم.',
+'بصّي، الشمس كل يوم الصبح، بتطلع من ناحية الشرق.',
+'لو وقفتي الصبح، ووشّك ناحية الشمس، يبقى إنتي كده بصّة على الشرق.',
+'واللي ورا ضهرك؟ ده الغرب.',
+'وناحية إيدك اليمين، يبقى الجنوب.',
+'وناحية إيدك الشمال، يبقى الشمال. سهلة خالص، صح؟'],
+'لو وقفتي الصبح ووشّك للشمس، الغرب هيبقى فين؟ والجنوب؟','الغرب ورا ضهري، والجنوب على إيدي اليمين.'],
+[['الاتجاهات دي بتساعدنا نقول مكان أي حاجة، بالنسبة للحاجات اللي حواليها.',
+'عندنا أربع اتجاهات أصلية: الشمال، والجنوب، والشرق، والغرب.',
+'وبين كل اتجاهين منهم، فيه اتجاه صغير اسمه اتجاه فرعي.',
+'وهما أربعة: الشمال الشرقي، والشمال الغربي، والجنوب الشرقي، والجنوب الغربي.',
+'يعني مثلاً، الشمال الغربي، مكانه بين الشمال والغرب. شفتي؟'],
+'الشمال الغربي بيقع بين أنهي اتجاهين؟','بين الشمال والغرب.'],
+[['طب وبالليل، لما الشمس تنام؟ الناس كانت بتبص للسما، وتستعين بالنجوم!',
+'المصريين القدماء كانوا بيدوّروا على نجم مهم قوي، اسمه النجم القطبي الشمالي، عشان يعرفوا الاتجاهات بالليل.',
+'النجم ده لامع وجميل، ودايماً بيشاور على الشمال.',
+'ولما يعرفوا الشمال فين، يقدروا يعرفوا باقي الاتجاهات كلها.',
+'وده معناه إن جدودنا المصريين القدماء، كانوا شطار جداً في علم الفلك.'],
+'ليه المصريين القدماء استعانوا بالنجم القطبي؟ وبيشاور على أنهي جهة؟','عشان يعرفوا الاتجاهات بالليل، وهو دايماً بيشاور على الشمال.'],
+[['وفيه كمان أدوات بتساعدنا نعرف الاتجاهات.',
+'أولها البوصلة. جواها إبرة صغيرة مغناطيسية، ودايماً بتشاور على الشمال.',
+'ومن الشمال، نقدر نعرف باقي الاتجاهات.',
+'والنهارده، فيه بوصلة رقمية جوة الموبايل كمان!',
+'وبنستخدمها عشان تعرّفنا الاتجاهات بسرعة، وبدقة أكبر.'],
+'ليه بنستخدم البوصلة الرقمية اللي في الموبايل؟','عشان نعرف الاتجاهات بسرعة وبدقة أكبر.'],
+[['برافو عليكي! خلّصنا الدرس الأول. يلا بينا على الدرس التاني: الخريطة في حياتنا.',
+'فاكرة المخطط بتاع البيت؟ المخطط ده شكل بسيط لفكرة الخريطة.',
+'أما الخريطة، فهي رسمة صغيرة بتورّينا سطح الأرض كله، أو حتة منه.',
+'وعشان نرسمها، بنستخدم رموز، وألوان، ومقياس رسم.'],
+'يعني إيه خريطة؟','رسمة صغيرة بتورّينا سطح الأرض أو جزء منه، بالرموز والألوان ومقياس الرسم.'],
+[['كل خريطة ليها أربع حاجات أساسية لازم تبقى فيها. تعالي نعرفهم واحدة واحدة.',
+'أول حاجة: عنوان الخريطة، بيقولنا الخريطة دي عن إيه. زي هنا: خريطة مصر.',
+'تاني حاجة: وردة البوصلة، بتورّينا الاتجاهات، وبتساعدنا نعرف مكان الأماكن.',
+'تالت حاجة: مقياس الرسم، بيقولنا المسافة على الخريطة، تساوي قد إيه في الحقيقة.',
+'ورابع حاجة: مفتاح الخريطة، بيشرحلنا كل لون وكل رمز معناه إيه.'],
+'إيه العنصر اللي بيشرح معنى الرموز والألوان على الخريطة؟','مفتاح الخريطة.'],
+[['يلا نلعب لعبة حساب! عايزين نعرف المسافة الحقيقية بين القاهرة وسوهاج.',
+'جبنا المسطرة وقسنا على الخريطة، لقينا المسافة خمسة سنتيمتر.',
+'ومقياس الرسم بيقول: كل سنتيمتر واحد على الخريطة، يساوي مية كيلومتر في الحقيقة.',
+'يبقى نضرب: خمسة، في مية...',
+'يطلع خمسمية كيلومتر! شفتي الحساب سهل إزاي؟'],
+'لو المسافة بين مدينتين على الخريطة ستة سنتيمتر، وكل سنتيمتر يساوي خمستاشر كيلومتر، تبقى المسافة الحقيقية كام؟','ستة في خمستاشر، يساوي تسعين كيلومتر (٦ × ١٥ = ٩٠ كم).'],
+[['الألوان اللي على الخريطة مش للشياكة بس، كل لون بيقولنا معلومة.',
+'اللون البني، معناه أرض عالية، زي الجبال والهضاب.',
+'اللون الأخضر، معناه أرض واطية، زي السهول.',
+'واللون الأزرق، معناه مية، زي البحار والمحيطات.'],
+'اللون الأخضر على الخريطة معناه إيه؟ والبني؟ والأزرق؟','الأخضر سهول، والبني جبال وهضاب، والأزرق بحار ومحيطات.'],
+[['الخريطة مهمة قوي في حياتنا. فاكرة الخريطة اللي في محطة المترو؟ بتعرّفنا نروح فين ونيجي منين.',
+'الفلاح بيستخدم الخريطة، عشان يعرف مكان أرضه الزراعية.',
+'والطيار، وقبطان المركب، بيستخدموها عشان يعرفوا طريق الرحلة.',
+'والسايح بيستخدمها، عشان يوصل للأماكن السياحية والأثرية، زي الأهرامات.',
+'والمهندس بيستخدمها، وهو بيخطط عشان يبني العمارات والطرق.',
+'والجندي بيستخدمها، عشان يحدد المواقع العسكرية.',
+'والمعلمة بتشرح بيها في الفصل، وإنتي كمان بتذاكري بيها. يعني الخريطة صاحبتنا كلنا!'],
+'الفلاح بيستخدم الخريطة في إيه؟ والطيار؟','الفلاح يعرف مكان أرضه الزراعية، والطيار يعرف طريق الرحلة.'],
+[['شطورة! يلا على الدرس التالت: تطور الخريطة. يعني نعرف الخريطة كان شكلها إيه زمان، وبقت إزاي دلوقتي.',
+'المصريين القدماء رسموا خرايط من آلاف السنين!',
+'رسموا فيها طريق نهر النيل...',
+'...وأماكن المناجم.',
+'ورسموها فين؟ على ورق البردي، وعلى جدران المعابد.'],
+'المصريين القدماء رسموا الخرايط على إيه؟ وليه؟','على ورق البردي وجدران المعابد، عشان يوضحوا طريق النيل وأماكن المناجم.'],
+[['والعلماء العرب كمان، كانوا شطار جداً في رسم الخرايط.',
+'أشهرهم العالم الإدريسي، وأهم حاجة عملها، إنه رسم خريطة للعالم كله.',
+'وكمان فيه عالمة شاطرة اسمها مريم الإسطرلابي. عاشت من زمان قوي، في القرن الرابع الهجري، يعني القرن العاشر الميلادي.',
+'مريم حبت علم الفلك، عشان باباها كان عالم فلك.',
+'واستخدمت حسابات رياضية دقيقة، عشان تطوّر جهاز اسمه الإسطرلاب، وعشان كده اتسمّت مريم الإسطرلابي.',
+'وتخيلي! سمّوا نجم صغير في الفضاء، اسمه كويكب، على اسمها، تكريماً ليها.'],
+'مين العالم العربي اللي رسم خريطة للعالم؟ وليه مريم اتسمّت الإسطرلابي؟','الإدريسي. ومريم اتسمّت كده لأنها طوّرت جهاز الإسطرلاب.'],
+[['طب الإسطرلاب ده إيه بالظبط؟',
+'ده جهاز فلكي قديم، كانوا بيعرفوا بيه الاتجاهات والأماكن من النجوم.',
+'وكانوا بيعرفوا بيه مواعيد الصلاة...',
+'...واتجاه القبلة...',
+'...وأول كل شهر قمري.'],
+'قوليلي حاجتين كانوا بيستخدموا فيهم الإسطرلاب.','مواعيد الصلاة، واتجاه القبلة، وبداية الشهور القمرية.'],
+[['وزي ما الدنيا اتطورت، الخريطة كمان اتطورت. من خريطة مرسومة بالإيد، لخريطة جوة الموبايل!',
+'زي تطبيق GPS، يعني نظام تحديد المواقع العالمي.',
+'والنظام ده بيشتغل بالأقمار الصناعية، اللي بتلف حوالين الأرض، وتحدد مكاننا بالظبط.',
+'يعني الـGPS ده، تطوير حديث للإسطرلاب القديم.'],
+'نظام GPS بيعتمد على إيه عشان يحدد مكاننا؟','على الأقمار الصناعية.'],
+[['النهارده، بنرسم الخرايط من صور بتتصور للأرض من فوق. ودي نوعين: صور جوية، وصور فضائية.',
+'الصور الجوية بتتصور من الطيارة، وبتورّينا حتة صغيرة من الأرض.',
+'والصور الفضائية بتتصور من الأقمار الصناعية في الفضاء، وبتورّينا مساحة كبيرة قوي.',
+'والاتنين بيساعدونا في رسم الخرايط.',
+'والصور الفضائية كمان، بتورّينا الأماكن بدقة أكتر.'],
+'إيه الفرق بين الصور الجوية والصور الفضائية؟','الجوية بتتصور من الطيارة وبتورّي مساحة صغيرة، والفضائية من الأقمار الصناعية وبتورّي مساحة أكبر.'],
+[['يلا نراجع حاجات مهمة! أول حاجة: مصادر المعلومات، ودي نوعين.',
+'مصادر أولية، زي النقوش على جدران المعابد، والبرديات. ودي أدق.',
+'ومصادر ثانوية، زي الموسوعات والمقالات.'],
+'البرديات مصدر أولي ولا ثانوي؟ والموسوعات؟','البرديات مصدر أولي، والموسوعات مصدر ثانوي.'],
+[['وكمان، مش كل كلام بنسمعه يبقى صح. تعالي نفرّق بين تلات حاجات.',
+'الحقيقة: معلومة صح، اتأكدنا منها، ونقدر نثبتها.',
+'الرأي: ده اللي الشخص شايفه، ممكن يكون صح، وممكن يكون غلط.',
+'والشائعة: كلام غلط، الناس بتقوله من غير ما يعرفوا جه منين. ماينفعش نصدقه أبداً!'],
+'الكلام الغلط اللي الناس بتقوله من غير ما يعرفوا مصدره، اسمه إيه؟','الشائعات.'],
+[['الله عليكي يا بطلة! كده خلّصنا الوحدة الأولى كلها.',
+'عرفنا الاتجاهات، والخريطة وعناصرها، وإزاي الخريطة اتطورت، من ورق البردي لحد الـGPS.',
+'فاضل آخر سؤال، وبعده نحتفل سوا!'],
+'صح ولا غلط: نقدر نقرا الخريطة بسهولة من غير مقياس الرسم.','غلط! من غير مقياس الرسم، بيصعب علينا نقرا الخريطة.']
+];
+NARR.forEach((n,k)=>{const s=scenes[k];if(n[0].length!==s.lines.length)console.warn('line count',k);s.lines=n[0];s.q=n[1];s.a=n[2]});
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const Q_IN=['يلا يا شاطرة، عندي ليكي سؤال.','سؤال صغير، ركّزي معايا.','وقت السؤال! يلا نشوف.'];
+const Q_OUT=['فكّري براحتك، معاكي تلاتين ثانية.','خدي وقتك وفكّري، وقوليلي الإجابة بصوت عالي.'];
+const A_IN=['يلا نعرف الإجابة.','تعالي نشوف قلتي صح ولا لأ.','شوفي بقى الإجابة.'];
+const A_OUT=['برافو عليكي!','لو قلتي كده، تبقي شاطرة جداً!','جميل قوي!'];
+
+const AUD={"0": {"e": "audio/s1-e.mp3", "q": "audio/s1-q.mp3", "a": "audio/s1-a.mp3", "b": [7.79, 16.18, 22.66, 31.31, 37.44, 45.01]}, "1": {"e": "audio/s2-e.mp3", "q": "audio/s2-q.mp3", "a": "audio/s2-a.mp3", "b": [3.67, 9.21, 15.92, 22.24, 28.22]}, "2": {"e": "audio/s3-e.mp3", "q": "audio/s3-q.mp3", "a": "audio/s3-a.mp3", "b": [9.73, 13.17, 17.74, 19.67, 22.21]}, "3": {"e": "audio/s4-e.mp3", "q": "audio/s4-q.mp3", "a": "audio/s4-a.mp3", "b": [5.21, 11.25, 14.42, 22.07]}, "4": {"e": "audio/s5-e.mp3", "q": "audio/s5-q.mp3", "a": "audio/s5-a.mp3", "b": [5.37, 13.32, 16.26, 20.27]}, "5": {"e": "audio/s6-e.mp3", "q": "audio/s6-q.mp3", "a": "audio/s6-a.mp3", "b": [3.02, 10.92, 14.06, 18.13]}, "6": {"e": "audio/s7-e.mp3", "q": "audio/s7-q.mp3", "a": "audio/s7-a.mp3", "b": [8.62, 13.09, 19.29]}, "7": {"e": "audio/s8-e.mp3", "q": "audio/s8-q.mp3", "a": "audio/s8-a.mp3", "b": [7.09, 13.11, 21.01, 27.69]}, "8": {"e": "audio/s9-e.mp3", "q": "audio/s9-q.mp3", "a": "audio/s9-a.mp3", "b": [5.29, 9.25, 16.66, 18.44]}, "9": {"e": "audio/s10-e.mp3", "q": "audio/s10-q.mp3", "a": "audio/s10-a.mp3", "b": [6.37, 9.82, 14.17]}, "10": {"e": "audio/s11-e.mp3", "q": "audio/s11-q.mp3", "a": "audio/s11-a.mp3", "b": [7.49, 11.66, 16.6, 22.15, 25.94, 28.93]}, "11": {"e": "audio/s12-e.mp3", "q": "audio/s12-q.mp3", "a": "audio/s12-a.mp3", "b": [4.21, 8.99, 12.89, 16.57]}, "12": {"e": "audio/s13-e.mp3", "q": "audio/s13-q.mp3", "a": "audio/s13-a.mp3", "b": [3.91, 10.57, 19.88, 23.75, 32.62]}, "13": {"e": "audio/s14-e.mp3", "q": "audio/s14-q.mp3", "a": "audio/s14-a.mp3", "b": [2.14, 9.1, 12.51, 13.85]}, "14": {"e": "audio/s15-e.mp3", "q": "audio/s15-q.mp3", "a": "audio/s15-a.mp3", "b": [7.04, 11.79, 18.25]}, "15": {"e": "audio/s16-e.mp3", "q": "audio/s16-q.mp3", "a": "audio/s16-a.mp3", "b": [8.0, 13.06, 19.25, 21.75]}, "16": {"e": "audio/s17-e.mp3", "q": "audio/s17-q.mp3", "a": "audio/s17-a.mp3", "b": [7.05, 15.04]}, "17": {"e": "audio/s18-e.mp3", "q": "audio/s18-q.mp3", "a": "audio/s18-a.mp3", "b": [5.54, 10.52, 15.83]}, "18": {"e": "audio/s19-e.mp3", "q": "audio/s19-q.mp3", "a": "audio/s19-a.mp3", "b": [4.02, 12.27]}};
+let cur=null;
+/* ---------- player ---------- */
+const $=id=>document.getElementById(id);
+const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const S={i:0,li:0,phase:'idle',left:30,paused:true};
+let tok=0,tick=null,waitT=null,voice=null,tts=('speechSynthesis' in window),actx=null;
+const synth=window.speechSynthesis;
+
+function toast(msg,ms=4000){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,ms)}
+const FEM=/salma|zariyah|hoda|laila|layla|mariam|maryam|amany|amira|fatima|rana|sana|noura|hala|lana|zahra|dalia|female/i;
+const MALE=/shakir|hamed|maged|majed|naayf|tarik|tarek|hamdan|omar|fahed|moaz|bassel|saleh|rami|taim|ahmed|\bali\b|\bmale\b/i;
+let rate=.88;
+function vscore(v){let s=0;if(/eg/i.test(v.lang))s+=3;if(FEM.test(v.name))s+=6;if(/natural|online|neural|premium|enhanced/i.test(v.name))s+=3;if(/google/i.test(v.name))s+=2;if(MALE.test(v.name))s-=8;return s}
+function arVoices(){return synth?synth.getVoices().filter(v=>/^ar/i.test(v.lang)):[]}
+function pickVoice(){if(!synth)return 0;const all=synth.getVoices(),vs=arVoices();let saved=null;try{saved=localStorage.getItem('nour-voice');const r=localStorage.getItem('nour-rate');if(r)rate=+r}catch(e){}
+  voice=vs.find(v=>v.name===saved)||vs.slice().sort((a,b)=>vscore(b)-vscore(a))[0]||null;fillVoices();return all.length}
+function fillVoices(){const sel=$('voiceSel');if(!sel)return;const vs=arVoices();
+  sel.innerHTML=vs.length?vs.map(v=>`<option value="${v.name}" ${voice&&v.name===voice.name?'selected':''}>${v.name.replace(/Microsoft |Google /,'').replace(/ - .*$/,'')} ${FEM.test(v.name)?'· صوت بنت':MALE.test(v.name)?'· صوت ولد':''}</option>`).join(''):'<option>مفيش أصوات عربي على الجهاز ده</option>';
+  $('rateIn').value=rate;$('voiceHint').hidden=!!(voice&&FEM.test(voice.name)&&/natural|online|neural/i.test(voice.name))}
+if(synth){pickVoice();synth.onvoiceschanged=pickVoice}
+
+function icons(){
+  $('playIco').innerHTML=S.paused?'<path d="M7 4l13 8-13 8z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>':'<rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>';
+  $('sndIco').innerHTML=tts?'<path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8q3 4 0 8M18.5 5.5q5 6.5 0 13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>':'<path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>';
+  $('sndBtn').classList.toggle('off',!tts);
+}
+function buildProg(){
+  $('prog').innerHTML=scenes.map((s,k)=>`<button aria-label="${s.t}" data-k="${k}"></button>`).join('');
+  $('prog').onclick=e=>{const k=e.target.dataset.k;if(k!=null){S.paused=false;go(+k)}};
+  const groups=[[L1,0],[L2,6],[L3,11],[LR,16]];
+  $('lessons').innerHTML=groups.map(g=>`<button data-k="${g[1]}">${g[0]}<span>${scenes[g[1]].t}</span></button>`).join('');
+  $('lessons').onclick=e=>{const b=e.target.closest('button');if(b)begin(+b.dataset.k)};
+}
+function stopAll(){tok++;if(cur){try{cur.pause()}catch(e){}cur=null}const se=document.getElementById('stageEl');se&&se.classList.remove('talking');clearInterval(tick);clearTimeout(waitT);try{synth&&synth.cancel()}catch(e){}}
+function est(t){return Math.max(3200,t.length*80)}
+function say(text,done){
+  const t=tok;let fired=false;const fin=()=>{if(fired||t!==tok||S.paused)return;fired=true;done()};
+  if(tts&&synth){
+    const clean=text.replace(/\([^)]*\)/g,'').replace(/الـ?GPS/g,'الجي بي إس').replace(/GPS/g,'جي بي إس').replace(/\.\.\./g,'،');
+    const parts=clean.split(/(?<=[.!؟?])\s+/).map(x=>x.trim()).filter(Boolean);
+    const male=voice&&MALE.test(voice.name);
+    $('stageEl').classList.add('talking');
+    let idx=0;const next=()=>{if(t!==tok||S.paused)return;if(idx>=parts.length){$('stageEl').classList.remove('talking');setTimeout(fin,500);return}
+      const u=new SpeechSynthesisUtterance(parts[idx++]);u.lang=voice?voice.lang:'ar-EG';if(voice)u.voice=voice;u.rate=rate;u.pitch=male?1.35:1.08;
+      u.onend=()=>setTimeout(next,280);u.onerror=()=>setTimeout(next,200);synth.speak(u)};
+    next();waitT=setTimeout(()=>{$('stageEl').classList.remove('talking');fin()},est(text)*2.6/rate+3000);
+  }else{$('stageEl').classList.add('talking');waitT=setTimeout(()=>{$('stageEl').classList.remove('talking');fin()},est(text))}
+}
+function wait(ms,fn){const t=tok;waitT=setTimeout(()=>{if(t===tok&&!S.paused)fn()},ms)}
+function beep(f=880,d=.08){try{if(!actx)return;const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;g.gain.value=.06;o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+d)}catch(e){}}
+function setStep(n){$('art').querySelectorAll('[data-s]').forEach(el=>el.classList.toggle('show',+el.dataset.s<=n))}
+function showCap(text){const p=$('cap');p.classList.remove('in');void p.offsetWidth;p.textContent=text;p.classList.add('in')}
+
+function renderScene(){
+  const s=scenes[S.i];
+  $('art').innerHTML=s.art;$('chip').textContent=s.l;$('title').textContent=s.t;
+  $('count').textContent=ar(S.i+1)+' / '+ar(scenes.length);
+  [...$('prog').children].forEach((b,k)=>{b.className=k<S.i?'done':k===S.i?'cur':''});
+  $('quiz').hidden=true;$('ans').hidden=true;$('nextBtn').hidden=true;$('revealBtn').hidden=false;$('think').hidden=false;
+  setStep(0);
+}
+function go(i){stopAll();S.i=Math.max(0,Math.min(scenes.length-1,i));S.li=0;S.phase='narr';renderScene();icons();run()}
+function openQuiz(){const s=scenes[S.i];setStep(99);$('qtext').textContent=s.q;$('atext').textContent=s.a;$('quiz').hidden=false;S.left=30;drawRing()}
+function drawRing(){$('rfg').style.strokeDashoffset=(276.5*(1-S.left/30)).toFixed(1);$('secs').textContent=ar(S.left);$('ring').classList.toggle('low',S.left<=5)}
+function run(){
+  if(S.paused)return;const s=scenes[S.i];
+  const A=AUD[S.i]||{};
+  if(S.phase==='narr'&&A.e){S.li=0;setStep(1);showCap(s.lines[0]);
+    clip(A.e,()=>{S.phase='ask';openQuiz();run()},tm=>{let k=0;(A.b||[]).forEach(x=>{if(tm>=x)k++});k=Math.min(k,s.lines.length-1);if(k!==S.li){S.li=k;setStep(k+1);showCap(s.lines[k])}});return}
+  if(S.phase==='ask'&&A.q){showCap('سؤال: '+s.q);clip(A.q,()=>{S.phase='wait';run()});return}
+  if(S.phase==='ans'&&A.a){$('ans').hidden=false;$('revealBtn').hidden=true;$('think').hidden=true;$('nextBtn').hidden=false;S.left=0;drawRing();showCap('الإجابة: '+s.a);beep(660,.12);
+    clip(A.a,()=>{S.phase='done';run()});return}
+  if(S.phase==='narr'){setStep(S.li+1);showCap(s.lines[S.li]);say(s.lines[S.li],()=>{if(S.li<s.lines.length-1){S.li++;run()}else{S.phase='ask';openQuiz();run()}})}
+  else if(S.phase==='ask'){showCap('سؤال: '+s.q);say(Q_IN[S.i%3]+' '+s.q+' '+Q_OUT[S.i%2],()=>{S.phase='wait';run()})}
+  else if(S.phase==='wait'){const t=tok;drawRing();tick=setInterval(()=>{if(t!==tok)return;S.left--;drawRing();if(S.left<=5&&S.left>0)beep(S.left===1?1200:880);if(S.left<=0){clearInterval(tick);S.phase='ans';run()}},1000)}
+  else if(S.phase==='ans'){$('ans').hidden=false;$('revealBtn').hidden=true;$('think').hidden=true;$('nextBtn').hidden=false;S.left=0;drawRing();showCap('الإجابة: '+s.a);beep(660,.12);
+    say(A_IN[S.i%3]+' '+s.a+' '+A_OUT[S.i%3],()=>{S.phase='done';run()})}
+  else if(S.phase==='done'){wait(3500,()=>{if(S.i<scenes.length-1)go(S.i+1);else finish()})}
+}
+function togglePause(){
+  if(cur&&!cur.ended){if(S.paused){S.paused=false;cur.play().catch(()=>{});$('stageEl').classList.add('talking')}else{S.paused=true;cur.pause();$('stageEl').classList.remove('talking')}icons();return}
+  if(S.paused){S.paused=false;icons();run()}else{S.paused=true;stopAll();icons()}}
+function clip(src,onEnd,onTime){const t=tok;const au=new Audio(src);cur=au;let done=false;
+  const fin=()=>{if(done||t!==tok)return;done=true;cur=null;$('stageEl').classList.remove('talking');setTimeout(()=>{if(t===tok&&!S.paused)onEnd()},450)};
+  au.ontimeupdate=()=>{if(t===tok&&onTime)onTime(au.currentTime)};au.onended=fin;
+  au.onerror=()=>{if(t!==tok)return;cur=null;toast('ملف صوت ماشتغلش، هكمّل بالكلام المكتوب.');setTimeout(fin,3000)};
+  $('stageEl').classList.add('talking');au.play().catch(()=>{if(t!==tok)return;S.paused=true;icons();$('stageEl').classList.remove('talking');toast('دوسي على زرار التشغيل عشان يشتغل الصوت.')})}
+function finish(){stopAll();S.paused=true;icons();$('end').hidden=false}
+function begin(k){
+  $('start').hidden=true;$('end').hidden=true;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  if(synth){const n=pickVoice();if(n&&!voice){tts=false;toast('الجهاز ده مافيهوش صوت عربي، فالشرح هيظهر مكتوب تحت الرسمة.',6000)}}
+  else{tts=false;toast('المتصفح ده مش بيدعم القراءة بالصوت، فالشرح هيظهر مكتوب.',6000)}
+  try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
+  S.paused=false;go(k);
+}
+$('goBtn').onclick=()=>begin(0);
+$('againBtn').onclick=()=>begin(0);
+$('setBtn').onclick=()=>{if(!S.paused)togglePause();pickVoice();$('settings').hidden=false};
+$('setDone').onclick=()=>{$('settings').hidden=true};
+$('voiceSel').onchange=e=>{voice=arVoices().find(v=>v.name===e.target.value)||voice;try{localStorage.setItem('nour-voice',voice.name)}catch(x){};fillVoices()};
+$('rateIn').oninput=e=>{rate=+e.target.value;try{localStorage.setItem('nour-rate',rate)}catch(x){}};
+$('tryBtn').onclick=()=>{if(!synth)return;synth.cancel();const u=new SpeechSynthesisUtterance('أهلاً يا حبيبتي، أنا مريم. يلا نتعلم سوا!');u.lang=voice?voice.lang:'ar-EG';if(voice)u.voice=voice;u.rate=rate;u.pitch=voice&&MALE.test(voice.name)?1.35:1.08;synth.speak(u)};
+$('closeEnd').onclick=()=>{$('end').hidden=true};
+$('playBtn').onclick=togglePause;
+$('prevBtn').onclick=()=>{S.paused=false;go(S.i-1)};
+$('nextSceneBtn').onclick=()=>{S.paused=false;if(S.i<scenes.length-1)go(S.i+1);else finish()};
+$('sndBtn').onclick=()=>{if(!synth){toast('المتصفح ده مش بيدعم الصوت.');return}
+  if(!tts&&!voice&&synth.getVoices().length){toast('مفيش صوت عربي على الجهاز ده.');return}
+  tts=!tts;icons();if(!S.paused){stopAll();run()}};
+$('revealBtn').onclick=()=>{stopAll();S.paused=false;S.phase='ans';icons();run()};
+$('nextBtn').onclick=()=>{S.paused=false;if(S.i<scenes.length-1)go(S.i+1);else finish()};
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target===document.body){e.preventDefault();togglePause()}});
+
+buildProg();renderScene();setStep(99);icons();
+</script>
+
+</body>
+</html>
